@@ -1,4 +1,10 @@
-# Welcome to your Lovable project
+# LaneNew - Study Track Hub
+
+## About
+
+Study progress tracking application with Supabase integration.
+
+**URL**: https://lane-new.vercel.app
 
 ## Project info
 
@@ -59,6 +65,22 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (PostgreSQL)
+
+## Database Setup
+
+1. Run the SQL scripts in Supabase SQL Editor:
+   - `study-track-hub-supabase-schema.sql` - Main schema
+   - `add-objective-title-column.sql` - Add title to objectives
+   - `add-objective-summary-column.sql` - Add summary to objectives
+   - `remove-objective-description-column.sql` - Remove description from objectives
+   - `remove-resource-type-column.sql` - Remove type from resources
+
+2. Create a `.env` file with:
+   ```
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
 ## How can I deploy this project?
 
