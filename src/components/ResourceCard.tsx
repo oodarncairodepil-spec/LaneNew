@@ -4,7 +4,9 @@ import { useStudy } from '@/contexts/StudyContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
-import { FileText, ExternalLink, MoreVertical, Trash2, Edit, Download, CheckCircle, Play, Pause } from 'lucide-react';
+import { FileText, Video, ExternalLink, MoreVertical, Trash2, Edit, Download, CheckCircle, Play, Pause } from 'lucide-react';
+import { ResourceViewer } from './ResourceViewer';
+import { isVideoUrl } from '@/lib/resource-utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,8 +35,9 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDelete, onEdit }: ResourceCardProps) {
   const { updateResourceStatus } = useStudy();
-  const Icon = FileText;
+  const Icon = isVideoUrl(resource.link) ? Video : FileText;
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
@@ -249,16 +252,17 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
 
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             {resource.link && (
-              <a
-                href={resource.link}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowViewer(true);
+                }}
                 className="inline-flex items-center gap-1 text-xs text-info hover:underline"
-                onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="h-3 w-3" />
                 Open resource
-              </a>
+              </button>
             )}
             <Select 
               value={resource.status} 
@@ -332,6 +336,12 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ResourceViewer
+        open={showViewer}
+        onOpenChange={setShowViewer}
+        resource={resource}
+      />
     </Card>
   );
 }
