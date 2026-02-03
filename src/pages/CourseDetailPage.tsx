@@ -25,11 +25,23 @@ import type { ProgressStatus } from '@/types/study';
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { getCourse, addLesson, deleteLesson, updateCourse, updateCourseStatus, getCourseStats } = useStudy();
+  const { getCourse, addLesson, deleteLesson, updateCourse, updateCourseStatus, getCourseStats, loading } = useStudy();
 
   const course = getCourse(courseId!);
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [showCourseForm, setShowCourseForm] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-2xl py-6 pb-24">
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading course...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!course) {
     navigate('/');
@@ -38,16 +50,16 @@ export default function CourseDetailPage() {
 
   const stats = getCourseStats(course);
 
-  const handleAddLesson = (data: { title: string; summary: string; projectQuestions: string; status: ProgressStatus }) => {
-    addLesson(courseId!, data);
+  const handleAddLesson = async (data: { title: string; summary: string; projectQuestions: string; goals?: string[]; status: ProgressStatus }) => {
+    await addLesson(courseId!, data);
   };
 
-  const handleStatusChange = (status: ProgressStatus) => {
-    updateCourseStatus(courseId!, status);
+  const handleStatusChange = async (status: ProgressStatus) => {
+    await updateCourseStatus(courseId!, status);
   };
 
-  const handleSummaryChange = (summary: string) => {
-    updateCourse(courseId!, { summary });
+  const handleSummaryChange = async (summary: string) => {
+    await updateCourse(courseId!, { summary });
   };
 
   const handleDownload = (format: 'txt' | 'md') => {
@@ -60,7 +72,7 @@ export default function CourseDetailPage() {
         summary: l.summary,
         objectives: l.objectives.map(o => ({
           title: o.title,
-          resources: o.resources.map(r => ({ title: r.title, summary: r.summary })),
+          resources: o.resources.map(r => ({ description: r.description, summary: r.summary })),
         })),
       })),
       format
@@ -112,6 +124,25 @@ export default function CourseDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Course Goals */}
+        {course.goals && course.goals.length > 0 && (
+          <Card className="mb-6 card-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Course Goals</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ul className="space-y-2">
+                {course.goals.map((goal, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-muted-foreground mt-1">•</span>
+                    <span className="flex-1 text-sm">{goal}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Course Summary */}
         <Card className="mb-6 card-shadow">
           <CardHeader className="pb-3">
@@ -153,7 +184,7 @@ export default function CourseDetailPage() {
                 key={lesson.id}
                 lesson={lesson}
                 courseId={courseId!}
-                onDelete={() => deleteLesson(courseId!, lesson.id)}
+                onDelete={async () => await deleteLesson(courseId!, lesson.id)}
               />
             ))}
           </div>
@@ -185,6 +216,7 @@ export default function CourseDetailPage() {
             title: course.title,
             description: course.description,
             summary: course.summary,
+            goals: course.goals || [],
           }}
         />
       </div>

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, BookOpen, GraduationCap } from 'lucide-react';
 
 export default function CoursesPage() {
-  const { courses } = useStudy();
+  const { courses, loading, error } = useStudy();
   const [showForm, setShowForm] = useState(false);
 
   const totalCourses = courses.length;
@@ -49,14 +49,30 @@ export default function CoursesPage() {
           </div>
         )}
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading courses...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
+            <p>{error}</p>
+          </div>
+        )}
+
         {/* Course List */}
-        {courses.length > 0 ? (
+        {!loading && !error && courses.length > 0 && (
           <div className="space-y-3">
             {courses.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>
-        ) : (
+        )}
+
+        {!loading && !error && courses.length === 0 && (
           <EmptyState
             icon={<BookOpen className="h-8 w-8" />}
             title="No courses yet"

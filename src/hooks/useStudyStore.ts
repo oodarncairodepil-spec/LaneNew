@@ -1,103 +1,105 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Course, Lesson, Objective, Resource, CreateCourse, CreateLesson, CreateObjective, CreateResource, ProgressStatus } from '@/types/study';
-
-const STORAGE_KEY = 'study-progress-data';
-
-const generateId = () => crypto.randomUUID();
-const now = () => new Date().toISOString();
-
-// Load initial data from localStorage
-const loadData = (): Course[] => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-};
-
-// Save data to localStorage
-const saveData = (courses: Course[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
-};
+import {
+  loadAllData,
+  createCourse as supabaseCreateCourse,
+  updateCourse as supabaseUpdateCourse,
+  deleteCourse as supabaseDeleteCourse,
+  createLesson as supabaseCreateLesson,
+  updateLesson as supabaseUpdateLesson,
+  deleteLesson as supabaseDeleteLesson,
+  createObjective as supabaseCreateObjective,
+  updateObjective as supabaseUpdateObjective,
+  deleteObjective as supabaseDeleteObjective,
+  createResource as supabaseCreateResource,
+  updateResource as supabaseUpdateResource,
+  deleteResource as supabaseDeleteResource,
+} from '@/lib/supabase-helpers';
 
 export function useStudyStore() {
-  const [courses, setCourses] = useState<Course[]>(loadData);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Persist changes
+  // Load data from Supabase on mount
   useEffect(() => {
-    saveData(courses);
-  }, [courses]);
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await loadAllData();
+        setCourses(data);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Reload data after mutations
+  const reloadData = useCallback(async () => {
+    try {
+      const data = await loadAllData();
+      setCourses(data);
+    } catch (err) {
+      console.error('Error reloading data:', err);
+    }
+  }, []);
 
   // Course operations
-  const addCourse = useCallback((data: CreateCourse): Course => {
-    const newCourse: Course = {
-      ...data,
-      id: generateId(),
-      lessons: [],
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    setCourses(prev => [...prev, newCourse]);
-    return newCourse;
-  }, []);
+  const addCourse = useCallback(async (data: CreateCourse): Promise<Course | null> => {
+    const newCourse = await supabaseCreateCourse(data);
+    if (newCourse) {
+      await reloadData();
+      return newCourse;
+    }
+    return null;
+  }, [reloadData]);
 
-  const updateCourse = useCallback((courseId: string, updates: Partial<CreateCourse>) => {
-    setCourses(prev => prev.map(course => 
-      course.id === courseId 
-        ? { ...course, ...updates, updatedAt: now() }
-        : course
-    ));
-  }, []);
+  const updateCourse = useCallback(async (courseId: string, updates: Partial<CreateCourse>) => {
+    const success = await supabaseUpdateCourse(courseId, updates);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
-  const deleteCourse = useCallback((courseId: string) => {
-    setCourses(prev => prev.filter(course => course.id !== courseId));
-  }, []);
+  const deleteCourse = useCallback(async (courseId: string) => {
+    const success = await supabaseDeleteCourse(courseId);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
   const getCourse = useCallback((courseId: string): Course | undefined => {
     return courses.find(c => c.id === courseId);
   }, [courses]);
 
   // Lesson operations
-  const addLesson = useCallback((courseId: string, data: CreateLesson): Lesson | undefined => {
-    const newLesson: Lesson = {
-      ...data,
-      id: generateId(),
-      objectives: [],
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? { ...course, lessons: [...course.lessons, newLesson], updatedAt: now() }
-        : course
-    ));
-    return newLesson;
-  }, []);
+  const addLesson = useCallback(async (courseId: string, data: CreateLesson): Promise<Lesson | undefined> => {
+    const newLesson = await supabaseCreateLesson(courseId, data);
+    if (newLesson) {
+      await reloadData();
+      return newLesson;
+    }
+    return undefined;
+  }, [reloadData]);
 
-  const updateLesson = useCallback((courseId: string, lessonId: string, updates: Partial<CreateLesson>) => {
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? {
-            ...course,
-            lessons: course.lessons.map(lesson =>
-              lesson.id === lessonId
-                ? { ...lesson, ...updates, updatedAt: now() }
-                : lesson
-            ),
-            updatedAt: now(),
-          }
-        : course
-    ));
-  }, []);
+  const updateLesson = useCallback(async (courseId: string, lessonId: string, updates: Partial<CreateLesson>) => {
+    const success = await supabaseUpdateLesson(lessonId, updates);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
-  const deleteLesson = useCallback((courseId: string, lessonId: string) => {
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? { ...course, lessons: course.lessons.filter(l => l.id !== lessonId), updatedAt: now() }
-        : course
-    ));
-  }, []);
+  const deleteLesson = useCallback(async (courseId: string, lessonId: string) => {
+    const success = await supabaseDeleteLesson(lessonId);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
   const getLesson = useCallback((courseId: string, lessonId: string): Lesson | undefined => {
     const course = courses.find(c => c.id === courseId);
@@ -105,69 +107,28 @@ export function useStudyStore() {
   }, [courses]);
 
   // Objective operations
-  const addObjective = useCallback((courseId: string, lessonId: string, data: CreateObjective): Objective | undefined => {
-    const newObjective: Objective = {
-      ...data,
-      id: generateId(),
-      resources: [],
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? {
-            ...course,
-            lessons: course.lessons.map(lesson =>
-              lesson.id === lessonId
-                ? { ...lesson, objectives: [...lesson.objectives, newObjective], updatedAt: now() }
-                : lesson
-            ),
-            updatedAt: now(),
-          }
-        : course
-    ));
-    return newObjective;
-  }, []);
+  const addObjective = useCallback(async (courseId: string, lessonId: string, data: CreateObjective): Promise<Objective | undefined> => {
+    const newObjective = await supabaseCreateObjective(lessonId, data);
+    if (newObjective) {
+      await reloadData();
+      return newObjective;
+    }
+    return undefined;
+  }, [reloadData]);
 
-  const updateObjective = useCallback((courseId: string, lessonId: string, objectiveId: string, updates: Partial<CreateObjective>) => {
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? {
-            ...course,
-            lessons: course.lessons.map(lesson =>
-              lesson.id === lessonId
-                ? {
-                    ...lesson,
-                    objectives: lesson.objectives.map(obj =>
-                      obj.id === objectiveId
-                        ? { ...obj, ...updates, updatedAt: now() }
-                        : obj
-                    ),
-                    updatedAt: now(),
-                  }
-                : lesson
-            ),
-            updatedAt: now(),
-          }
-        : course
-    ));
-  }, []);
+  const updateObjective = useCallback(async (courseId: string, lessonId: string, objectiveId: string, updates: Partial<CreateObjective>) => {
+    const success = await supabaseUpdateObjective(objectiveId, updates);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
-  const deleteObjective = useCallback((courseId: string, lessonId: string, objectiveId: string) => {
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? {
-            ...course,
-            lessons: course.lessons.map(lesson =>
-              lesson.id === lessonId
-                ? { ...lesson, objectives: lesson.objectives.filter(o => o.id !== objectiveId), updatedAt: now() }
-                : lesson
-            ),
-            updatedAt: now(),
-          }
-        : course
-    ));
-  }, []);
+  const deleteObjective = useCallback(async (courseId: string, lessonId: string, objectiveId: string) => {
+    const success = await supabaseDeleteObjective(objectiveId);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
   const getObjective = useCallback((courseId: string, lessonId: string, objectiveId: string): Objective | undefined => {
     const lesson = getLesson(courseId, lessonId);
@@ -175,92 +136,28 @@ export function useStudyStore() {
   }, [getLesson]);
 
   // Resource operations
-  const addResource = useCallback((courseId: string, lessonId: string, objectiveId: string, data: CreateResource): Resource | undefined => {
-    const newResource: Resource = {
-      ...data,
-      id: generateId(),
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? {
-            ...course,
-            lessons: course.lessons.map(lesson =>
-              lesson.id === lessonId
-                ? {
-                    ...lesson,
-                    objectives: lesson.objectives.map(obj =>
-                      obj.id === objectiveId
-                        ? { ...obj, resources: [...obj.resources, newResource], updatedAt: now() }
-                        : obj
-                    ),
-                    updatedAt: now(),
-                  }
-                : lesson
-            ),
-            updatedAt: now(),
-          }
-        : course
-    ));
-    return newResource;
-  }, []);
+  const addResource = useCallback(async (courseId: string, lessonId: string, objectiveId: string, data: CreateResource): Promise<Resource | undefined> => {
+    const newResource = await supabaseCreateResource(objectiveId, data);
+    if (newResource) {
+      await reloadData();
+      return newResource;
+    }
+    return undefined;
+  }, [reloadData]);
 
-  const updateResource = useCallback((courseId: string, lessonId: string, objectiveId: string, resourceId: string, updates: Partial<CreateResource>) => {
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? {
-            ...course,
-            lessons: course.lessons.map(lesson =>
-              lesson.id === lessonId
-                ? {
-                    ...lesson,
-                    objectives: lesson.objectives.map(obj =>
-                      obj.id === objectiveId
-                        ? {
-                            ...obj,
-                            resources: obj.resources.map(res =>
-                              res.id === resourceId
-                                ? { ...res, ...updates, updatedAt: now() }
-                                : res
-                            ),
-                            updatedAt: now(),
-                          }
-                        : obj
-                    ),
-                    updatedAt: now(),
-                  }
-                : lesson
-            ),
-            updatedAt: now(),
-          }
-        : course
-    ));
-  }, []);
+  const updateResource = useCallback(async (courseId: string, lessonId: string, objectiveId: string, resourceId: string, updates: Partial<CreateResource>) => {
+    const success = await supabaseUpdateResource(resourceId, updates);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
-  const deleteResource = useCallback((courseId: string, lessonId: string, objectiveId: string, resourceId: string) => {
-    setCourses(prev => prev.map(course =>
-      course.id === courseId
-        ? {
-            ...course,
-            lessons: course.lessons.map(lesson =>
-              lesson.id === lessonId
-                ? {
-                    ...lesson,
-                    objectives: lesson.objectives.map(obj =>
-                      obj.id === objectiveId
-                        ? { ...obj, resources: obj.resources.filter(r => r.id !== resourceId), updatedAt: now() }
-                        : obj
-                    ),
-                    updatedAt: now(),
-                  }
-                : lesson
-            ),
-            updatedAt: now(),
-          }
-        : course
-    ));
-  }, []);
+  const deleteResource = useCallback(async (courseId: string, lessonId: string, objectiveId: string, resourceId: string) => {
+    const success = await supabaseDeleteResource(resourceId);
+    if (success) {
+      await reloadData();
+    }
+  }, [reloadData]);
 
   // Status helpers
   const updateCourseStatus = useCallback((courseId: string, status: ProgressStatus) => {
@@ -309,6 +206,8 @@ export function useStudyStore() {
 
   return {
     courses,
+    loading,
+    error,
     // Course
     addCourse,
     updateCourse,

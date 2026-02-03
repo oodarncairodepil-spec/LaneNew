@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, Target, Edit, Download, HelpCircle } from 'lucide-react';
 import { downloadSummary, formatLessonSummary } from '@/lib/download';
-import type { ProgressStatus, ResourceType, Resource } from '@/types/study';
+import type { ProgressStatus, Resource } from '@/types/study';
 
 export default function LessonDetailPage() {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
@@ -34,6 +34,7 @@ export default function LessonDetailPage() {
     addResource,
     updateResource,
     deleteResource,
+    loading,
   } = useStudy();
 
   const lesson = getLesson(courseId!, lessonId!);
@@ -43,25 +44,41 @@ export default function LessonDetailPage() {
   const [selectedObjectiveId, setSelectedObjectiveId] = useState<string | null>(null);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-2xl py-6 pb-24">
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading lesson...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!lesson) {
     navigate(`/course/${courseId}`);
     return null;
   }
 
-  const handleAddObjective = (data: { title: string; description: string; status: ProgressStatus }) => {
-    addObjective(courseId!, lessonId!, data);
+  const handleAddObjective = async (data: { title: string; summary: string; status: ProgressStatus }) => {
+    await addObjective(courseId!, lessonId!, {
+      title: data.title,
+      summary: data.summary,
+      status: data.status,
+    });
   };
 
-  const handleStatusChange = (status: ProgressStatus) => {
-    updateLessonStatus(courseId!, lessonId!, status);
+  const handleStatusChange = async (status: ProgressStatus) => {
+    await updateLessonStatus(courseId!, lessonId!, status);
   };
 
-  const handleSummaryChange = (summary: string) => {
-    updateLesson(courseId!, lessonId!, { summary });
+  const handleSummaryChange = async (summary: string) => {
+    await updateLesson(courseId!, lessonId!, { summary });
   };
 
-  const handleProjectQuestionsChange = (projectQuestions: string) => {
-    updateLesson(courseId!, lessonId!, { projectQuestions });
+  const handleProjectQuestionsChange = async (projectQuestions: string) => {
+    await updateLesson(courseId!, lessonId!, { projectQuestions });
   };
 
   const handleAddResource = (objectiveId: string) => {
@@ -76,12 +93,12 @@ export default function LessonDetailPage() {
     setShowResourceForm(true);
   };
 
-  const handleResourceSubmit = (data: { title: string; link: string; type: ResourceType; summary: string; status: ProgressStatus }) => {
+  const handleResourceSubmit = async (data: { description: string; link: string; summary: string; status: ProgressStatus }) => {
     if (selectedObjectiveId) {
       if (editingResource) {
-        updateResource(courseId!, lessonId!, selectedObjectiveId, editingResource.id, data);
+        await updateResource(courseId!, lessonId!, selectedObjectiveId, editingResource.id, data);
       } else {
-        addResource(courseId!, lessonId!, selectedObjectiveId, data);
+        await addResource(courseId!, lessonId!, selectedObjectiveId, data);
       }
     }
   };
@@ -93,7 +110,7 @@ export default function LessonDetailPage() {
       lesson.projectQuestions,
       lesson.objectives.map(o => ({
         title: o.title,
-        resources: o.resources.map(r => ({ title: r.title, summary: r.summary })),
+        resources: o.resources.map(r => ({ description: r.description, summary: r.summary })),
       })),
       format
     );
@@ -154,6 +171,25 @@ export default function LessonDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Lesson Goals */}
+        {lesson.goals && lesson.goals.length > 0 && (
+          <Card className="mb-6 card-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Lesson Goals</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ul className="space-y-2">
+                {lesson.goals.map((goal, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-muted-foreground mt-1">•</span>
+                    <span className="flex-1 text-sm">{goal}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Project Questions */}
         <Card className="mb-6 card-shadow">
           <CardHeader className="pb-3">
@@ -190,9 +226,9 @@ export default function LessonDetailPage() {
                 objective={objective}
                 courseId={courseId!}
                 lessonId={lessonId!}
-                onDelete={() => deleteObjective(courseId!, lessonId!, objective.id)}
+                onDelete={async () => await deleteObjective(courseId!, lessonId!, objective.id)}
                 onAddResource={() => handleAddResource(objective.id)}
-                onDeleteResource={(resourceId) => deleteResource(courseId!, lessonId!, objective.id, resourceId)}
+                onDeleteResource={async (resourceId) => await deleteResource(courseId!, lessonId!, objective.id, resourceId)}
                 onEditResource={(resourceId) => {
                   const resource = objective.resources.find(r => r.id === resourceId);
                   if (resource) handleEditResource(objective.id, resource);
@@ -223,11 +259,12 @@ export default function LessonDetailPage() {
         <LessonFormDialog
           open={showLessonForm}
           onOpenChange={setShowLessonForm}
-          onSubmit={(data) => updateLesson(courseId!, lessonId!, data)}
+          onSubmit={async (data) => await updateLesson(courseId!, lessonId!, data)}
           initialData={{
             title: lesson.title,
             summary: lesson.summary,
             projectQuestions: lesson.projectQuestions,
+            goals: lesson.goals || [],
           }}
           isEditing
         />

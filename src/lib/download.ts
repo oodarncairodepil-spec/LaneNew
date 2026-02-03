@@ -24,18 +24,18 @@ export function downloadSummary({ filename, content, format }: DownloadOptions) 
   URL.revokeObjectURL(url);
 }
 
-export function formatResourceSummary(title: string, link: string, summary: string, format: DownloadFormat): string {
+export function formatResourceSummary(description: string, link: string, summary: string, format: DownloadFormat): string {
   if (format === 'md') {
-    return `# ${title}\n\n**Source:** [${link}](${link})\n\n## Summary\n\n${summary}`;
+    return `# ${description}\n\n**Source:** [${link}](${link})\n\n## Summary\n\n${summary}`;
   }
-  return `${title}\n${'='.repeat(title.length)}\n\nSource: ${link}\n\nSummary:\n${summary}`;
+  return `${description}\n${'='.repeat(description.length)}\n\nSource: ${link}\n\nSummary:\n${summary}`;
 }
 
 export function formatLessonSummary(
   lessonTitle: string,
   lessonSummary: string,
   projectQuestions: string,
-  objectives: Array<{ title: string; resources: Array<{ title: string; summary: string }> }>,
+  objectives: Array<{ title: string; resources: Array<{ description: string; summary: string }> }>,
   format: DownloadFormat
 ): string {
   if (format === 'md') {
@@ -49,10 +49,16 @@ export function formatLessonSummary(
     if (objectives.length > 0) {
       content += `## Objectives\n\n`;
       objectives.forEach(obj => {
-        content += `### ${obj.title}\n\n`;
+        if (obj.title) {
+          content += `### ${obj.title}\n\n`;
+        }
         obj.resources.forEach(res => {
           if (res.summary) {
-            content += `#### ${res.title}\n\n${res.summary}\n\n`;
+            if (res.description) {
+              content += `#### ${res.description}\n\n${res.summary}\n\n`;
+            } else {
+              content += `${res.summary}\n\n`;
+            }
           }
         });
       });
@@ -71,10 +77,16 @@ export function formatLessonSummary(
   if (objectives.length > 0) {
     content += `OBJECTIVES\n${'-'.repeat(10)}\n\n`;
     objectives.forEach(obj => {
-      content += `${obj.title}\n`;
+      if (obj.title) {
+        content += `${obj.title}\n`;
+      }
       obj.resources.forEach(res => {
         if (res.summary) {
-          content += `  - ${res.title}\n    ${res.summary}\n\n`;
+          if (res.description) {
+            content += `    - ${res.description}\n      ${res.summary}\n\n`;
+          } else {
+            content += `    - ${res.summary}\n\n`;
+          }
         }
       });
     });
@@ -89,7 +101,7 @@ export function formatCourseSummary(
   lessons: Array<{
     title: string;
     summary: string;
-    objectives: Array<{ title: string; resources: Array<{ title: string; summary: string }> }>;
+    objectives: Array<{ title: string; resources: Array<{ description: string; summary: string }> }>;
   }>,
   format: DownloadFormat
 ): string {
@@ -107,10 +119,16 @@ export function formatCourseSummary(
         content += `${lesson.summary}\n\n`;
       }
       lesson.objectives.forEach(obj => {
-        content += `### ${obj.title}\n\n`;
+        if (obj.title) {
+          content += `### ${obj.title}\n\n`;
+        }
         obj.resources.forEach(res => {
           if (res.summary) {
-            content += `- **${res.title}**: ${res.summary}\n`;
+            if (res.description) {
+              content += `- **${res.description}**: ${res.summary}\n`;
+            } else {
+              content += `- ${res.summary}\n`;
+            }
           }
         });
         content += '\n';
@@ -133,15 +151,21 @@ export function formatCourseSummary(
     if (lesson.summary) {
       content += `${lesson.summary}\n\n`;
     }
-    lesson.objectives.forEach(obj => {
-      content += `  ${obj.title}\n`;
-      obj.resources.forEach(res => {
-        if (res.summary) {
-          content += `    • ${res.title}: ${res.summary}\n`;
+      lesson.objectives.forEach(obj => {
+        if (obj.title) {
+          content += `  ${obj.title}\n`;
         }
+        obj.resources.forEach(res => {
+          if (res.summary) {
+            if (res.description) {
+              content += `      • ${res.description}: ${res.summary}\n`;
+            } else {
+              content += `      • ${res.summary}\n`;
+            }
+          }
+        });
+        content += '\n';
       });
-      content += '\n';
-    });
   });
   return content;
 }

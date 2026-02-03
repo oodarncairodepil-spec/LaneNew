@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -12,48 +11,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { ProgressStatus, ResourceType, Resource } from '@/types/study';
-import { Video, FileText } from 'lucide-react';
+import type { ProgressStatus, Resource } from '@/types/study';
 
 interface ResourceFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { title: string; link: string; type: ResourceType; summary: string; status: ProgressStatus }) => void;
+  onSubmit: (data: { description: string; link: string; summary: string; status: ProgressStatus }) => void;
   initialData?: Resource;
   isEditing?: boolean;
 }
 
 export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, isEditing }: ResourceFormDialogProps) {
-  const [title, setTitle] = useState(initialData?.title || '');
+  const [description, setDescription] = useState(initialData?.description || '');
   const [link, setLink] = useState(initialData?.link || '');
-  const [type, setType] = useState<ResourceType>(initialData?.type || 'document');
   const [summary, setSummary] = useState(initialData?.summary || '');
 
   useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title);
-      setLink(initialData.link);
-      setType(initialData.type);
-      setSummary(initialData.summary);
+    if (open) {
+      if (isEditing && initialData) {
+        setDescription(initialData.description || '');
+        setLink(initialData.link || '');
+        setSummary(initialData.summary || '');
+      } else {
+        setDescription(initialData?.description || '');
+        setLink(initialData?.link || '');
+        setSummary(initialData?.summary || '');
+      }
+    } else {
+      if (!isEditing) {
+        setDescription('');
+        setLink('');
+        setSummary('');
+      }
     }
-  }, [initialData]);
+  }, [open, initialData, isEditing]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!description.trim()) return;
 
     onSubmit({
-      title: title.trim(),
+      description: description.trim(),
       link: link.trim(),
-      type,
       summary: summary.trim(),
       status: initialData?.status || 'not_started',
     });
 
     if (!isEditing) {
-      setTitle('');
+      setDescription('');
       setLink('');
-      setType('document');
       setSummary('');
     }
     onOpenChange(false);
@@ -72,14 +78,17 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
 
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="resource-title">Resource Title *</Label>
+              <Label htmlFor="resource-description">Description *</Label>
               <Input
-                id="resource-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Introduction Video"
+                id="resource-description"
+                value={description || ''}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief description of the resource (e.g., 'Introduction to React')"
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                A short description to identify this resource.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -94,37 +103,17 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
             </div>
 
             <div className="space-y-2">
-              <Label>Resource Type</Label>
-              <RadioGroup value={type} onValueChange={(v) => setType(v as ResourceType)} className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="video" id="type-video" />
-                  <Label htmlFor="type-video" className="flex items-center gap-1.5 cursor-pointer">
-                    <Video className="h-4 w-4" />
-                    Video
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="document" id="type-document" />
-                  <Label htmlFor="type-document" className="flex items-center gap-1.5 cursor-pointer">
-                    <FileText className="h-4 w-4" />
-                    Document
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="resource-summary">Summary</Label>
               <Textarea
                 id="resource-summary"
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                placeholder="Enter your notes and summary of this resource..."
+                placeholder="Enter your detailed notes and summary of this resource. This can be downloaded as TXT or Markdown for offline study."
                 rows={6}
                 className="resize-y"
               />
               <p className="text-xs text-muted-foreground">
-                This summary can be downloaded as TXT or Markdown for offline study.
+                Optional detailed notes and summary. This will be included in downloadable study materials.
               </p>
             </div>
           </div>
@@ -133,7 +122,7 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!title.trim()}>
+            <Button type="submit" disabled={!description?.trim()}>
               {isEditing ? 'Save Changes' : 'Add Resource'}
             </Button>
           </DialogFooter>

@@ -53,9 +53,9 @@ export function CourseCard({ course }: CourseCardProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  deleteCourse(course.id);
+                  await deleteCourse(course.id);
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />

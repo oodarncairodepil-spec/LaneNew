@@ -51,6 +51,9 @@ export function ObjectiveCard({
             </div>
             <div className="min-w-0 flex-1">
               <h4 className="truncate font-medium text-foreground">{objective.title}</h4>
+              {objective.summary && (
+                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{objective.summary}</p>
+              )}
               <p className="text-xs text-muted-foreground">
                 {completedResources}/{totalResources} resources completed
               </p>
@@ -85,10 +88,6 @@ export function ObjectiveCard({
 
         <CollapsibleContent>
           <CardContent className="p-4">
-            {objective.description && (
-              <p className="mb-4 text-sm text-muted-foreground">{objective.description}</p>
-            )}
-
             <div className="space-y-3">
               {objective.resources.map((resource) => (
                 <ResourceCard

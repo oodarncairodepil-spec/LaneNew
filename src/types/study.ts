@@ -5,9 +5,8 @@ export type ResourceType = 'video' | 'document';
 
 export interface Resource {
   id: string;
-  title: string;
+  description: string;
   link: string;
-  type: ResourceType;
   summary: string;
   status: ProgressStatus;
   createdAt: string;
@@ -17,7 +16,7 @@ export interface Resource {
 export interface Objective {
   id: string;
   title: string;
-  description: string;
+  summary: string;
   resources: Resource[];
   status: ProgressStatus;
   createdAt: string;
@@ -29,6 +28,7 @@ export interface Lesson {
   title: string;
   summary: string;
   projectQuestions: string;
+  goals: string[];
   objectives: Objective[];
   status: ProgressStatus;
   createdAt: string;
@@ -40,6 +40,7 @@ export interface Course {
   title: string;
   description: string;
   summary: string;
+  goals: string[];
   lessons: Lesson[];
   status: ProgressStatus;
   createdAt: string;
