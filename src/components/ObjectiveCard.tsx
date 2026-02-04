@@ -2,8 +2,7 @@ import { useState } from 'react';
 import type { Objective } from '@/types/study';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StatusBadge } from '@/components/StatusBadge';
-import { Target, ChevronDown, ChevronUp, MoreVertical, Trash2, Plus, Video, FileText } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, MoreVertical, Trash2, Plus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,12 +40,36 @@ export function ObjectiveCard({
   const completedResources = objective.resources.filter(r => r.status === 'completed').length;
   const totalResources = objective.resources.length;
 
+  // Determine icon color based on resource statuses
+  const getIconColorClasses = () => {
+    if (totalResources === 0) {
+      // No resources - grey
+      return 'bg-muted/20 text-muted-foreground';
+    }
+
+    const hasInProgressOrCompleted = objective.resources.some(
+      r => r.status === 'in_progress' || r.status === 'completed'
+    );
+    const allCompleted = objective.resources.every(r => r.status === 'completed');
+
+    if (allCompleted) {
+      // All completed - green
+      return 'bg-success/20 text-success';
+    } else if (hasInProgressOrCompleted) {
+      // At least one in progress or completed - orange (current)
+      return 'bg-accent/20 text-accent';
+    } else {
+      // All not started - grey
+      return 'bg-muted/20 text-muted-foreground';
+    }
+  };
+
   return (
     <Card className="card-shadow animate-fade-in overflow-hidden">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/20 text-accent">
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${getIconColorClasses()}`}>
               <Target className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -61,7 +84,6 @@ export function ObjectiveCard({
           </div>
 
           <div className="flex items-center gap-2">
-            <StatusBadge status={objective.status} size="sm" showLabel={false} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">

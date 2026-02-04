@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import type { Course } from '@/types/study';
 import { useStudy } from '@/contexts/StudyContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { StatusBadge } from '@/components/StatusBadge';
 import { ProgressBar } from '@/components/ProgressBar';
-import { BookOpen, MoreVertical, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { BookOpen, CheckCircle2, MoreVertical, Target, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,13 @@ export function CourseCard({ course }: CourseCardProps) {
   const navigate = useNavigate();
   const { deleteCourse, getCourseStats } = useStudy();
   const stats = getCourseStats(course);
+
+  const getStatColorClass = (completed: number, total: number) => {
+    if (total === 0) return 'text-muted-foreground';
+    if (completed === 0) return 'text-muted-foreground';
+    if (completed >= total) return 'text-success';
+    return 'text-warning';
+  };
 
   return (
     <Card 
@@ -65,10 +72,21 @@ export function CourseCard({ course }: CourseCardProps) {
           </DropdownMenu>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-          <span>{stats.totalLessons} {stats.totalLessons === 1 ? 'lesson' : 'lessons'}</span>
-          <span>{stats.totalResources} {stats.totalResources === 1 ? 'resource' : 'resources'}</span>
-          <StatusBadge status={course.status} size="sm" />
+        <div className="mt-4 flex items-center gap-x-3 text-xs whitespace-nowrap overflow-x-auto">
+          <span className={cn('flex items-center gap-1 shrink-0', getStatColorClass(stats.completedLessons, stats.totalLessons))}>
+            {stats.completedLessons}/{stats.totalLessons} {stats.totalLessons === 1 ? 'lesson' : 'lessons'}
+          </span>
+          <span className={cn('flex items-center gap-1 shrink-0', getStatColorClass(stats.completedGoals, stats.totalGoals))}>
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {stats.completedGoals}/{stats.totalGoals} {stats.totalGoals === 1 ? 'goal' : 'goals'}
+          </span>
+          <span className={cn('flex items-center gap-1 shrink-0', getStatColorClass(stats.completedObjectives, stats.totalObjectives))}>
+            <Target className="h-3.5 w-3.5" />
+            {stats.completedObjectives}/{stats.totalObjectives} {stats.totalObjectives === 1 ? 'objective' : 'objectives'}
+          </span>
+          <span className={cn('flex items-center gap-1 shrink-0', getStatColorClass(stats.completedResources, stats.totalResources))}>
+            {stats.completedResources}/{stats.totalResources} {stats.totalResources === 1 ? 'resource' : 'resources'}
+          </span>
         </div>
 
         <div className="mt-3">

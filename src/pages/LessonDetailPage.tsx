@@ -7,17 +7,10 @@ import { ObjectiveFormDialog } from '@/components/ObjectiveFormDialog';
 import { LessonFormDialog } from '@/components/LessonFormDialog';
 import { ResourceFormDialog } from '@/components/ResourceFormDialog';
 import { EmptyState } from '@/components/EmptyState';
-import { StatusBadge } from '@/components/StatusBadge';
+import { GoalItem } from '@/components/GoalItem';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Plus, Target, Edit, Download, HelpCircle } from 'lucide-react';
 import { downloadSummary, formatLessonSummary } from '@/lib/download';
 import type { ProgressStatus, Resource } from '@/types/study';
@@ -28,7 +21,6 @@ export default function LessonDetailPage() {
   const {
     getLesson,
     updateLesson,
-    updateLessonStatus,
     addObjective,
     deleteObjective,
     addResource,
@@ -69,16 +61,60 @@ export default function LessonDetailPage() {
     });
   };
 
-  const handleStatusChange = async (status: ProgressStatus) => {
-    await updateLessonStatus(courseId!, lessonId!, status);
-  };
-
   const handleSummaryChange = async (summary: string) => {
     await updateLesson(courseId!, lessonId!, { summary });
   };
 
   const handleProjectQuestionsChange = async (projectQuestions: string) => {
     await updateLesson(courseId!, lessonId!, { projectQuestions });
+  };
+
+  const handleGoalAnswerChange = async (index: number, answer: string) => {
+    const currentAnswers = lesson.goalAnswers || [];
+    const newAnswers = [...currentAnswers];
+    newAnswers[index] = answer;
+    // Ensure array length matches goals length
+    while (newAnswers.length < (lesson.goals?.length || 0)) {
+      newAnswers.push('');
+    }
+    
+    // Check if all goals have answers
+    const allGoalsHaveAnswers = lesson.goals && lesson.goals.length > 0 && 
+      lesson.goals.every((_, idx) => {
+        const ans = newAnswers[idx] || '';
+        return ans.trim().length > 0;
+      });
+    
+    // Update lesson with new answers and status
+    await updateLesson(courseId!, lessonId!, { 
+      goalAnswers: newAnswers,
+      ...(allGoalsHaveAnswers && { status: 'completed' as ProgressStatus })
+    });
+  };
+
+  const handleDownloadGoals = (format: 'txt' | 'md') => {
+    if (!lesson.goals || lesson.goals.length === 0) return;
+
+    const answers = lesson.goalAnswers || [];
+    let content = '';
+    
+    if (format === 'md') {
+      content = `# ${lesson.title} - Goals and Answers\n\n`;
+      lesson.goals.forEach((goal, index) => {
+        content += `## Goal ${index + 1}\n\n**Question:** ${goal}\n\n**Answer:**\n\n${answers[index] || '(No answer yet)'}\n\n---\n\n`;
+      });
+    } else {
+      content = `${lesson.title} - Goals and Answers\n${'='.repeat(lesson.title.length + 20)}\n\n`;
+      lesson.goals.forEach((goal, index) => {
+        content += `Goal ${index + 1}\n${'-'.repeat(10)}\n\nQuestion: ${goal}\n\nAnswer:\n${answers[index] || '(No answer yet)'}\n\n${'='.repeat(40)}\n\n`;
+      });
+    }
+
+    downloadSummary({
+      filename: `${lesson.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_goals`,
+      content,
+      format,
+    });
   };
 
   const handleAddResource = (objectiveId: string) => {
@@ -140,21 +176,6 @@ export default function LessonDetailPage() {
           }
         />
 
-        {/* Status */}
-        <div className="mb-6 flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Status:</span>
-          <Select value={lesson.status} onValueChange={(v) => handleStatusChange(v as ProgressStatus)}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="not_started">Not Started</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Lesson Summary */}
         <Card className="mb-4 card-shadow">
           <CardHeader className="pb-3">
@@ -178,12 +199,15 @@ export default function LessonDetailPage() {
               <CardTitle className="text-base">Lesson Goals</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <ul className="space-y-2">
+              <ul className="space-y-4">
                 {lesson.goals.map((goal, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-muted-foreground mt-1">•</span>
-                    <span className="flex-1 text-sm">{goal}</span>
-                  </li>
+                  <GoalItem
+                    key={index}
+                    goal={goal}
+                    answer={lesson.goalAnswers?.[index] || ''}
+                    index={index}
+                    onAnswerChange={handleGoalAnswerChange}
+                  />
                 ))}
               </ul>
             </CardContent>
@@ -265,6 +289,7 @@ export default function LessonDetailPage() {
             summary: lesson.summary,
             projectQuestions: lesson.projectQuestions,
             goals: lesson.goals || [],
+            goalAnswers: lesson.goalAnswers || [],
           }}
           isEditing
         />

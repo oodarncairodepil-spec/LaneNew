@@ -29,6 +29,7 @@ export interface Lesson {
   summary: string;
   projectQuestions: string;
   goals: string[];
+  goalAnswers: string[];
   objectives: Objective[];
   status: ProgressStatus;
   createdAt: string;
@@ -41,6 +42,7 @@ export interface Course {
   description: string;
   summary: string;
   goals: string[];
+  goalAnswers: string[];
   lessons: Lesson[];
   status: ProgressStatus;
   createdAt: string;

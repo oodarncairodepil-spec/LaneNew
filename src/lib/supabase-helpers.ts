@@ -1,5 +1,59 @@
 import { supabase } from './supabase';
-import type { Course, Lesson, Objective, Resource, CreateCourse, CreateLesson, CreateObjective, CreateResource } from '@/types/study';
+import type { Course, Lesson, Objective, Resource, CreateCourse, CreateLesson, CreateObjective, CreateResource, ProgressStatus } from '@/types/study';
+
+// Helper function to calculate objective status based on resources
+export const calculateObjectiveStatus = (resources: Resource[]): ProgressStatus => {
+  if (resources.length === 0) {
+    return 'not_started';
+  }
+
+  const hasInProgressOrCompleted = resources.some(r => r.status === 'in_progress' || r.status === 'completed');
+  const allCompleted = resources.every(r => r.status === 'completed');
+
+  let status: ProgressStatus;
+  if (allCompleted) {
+    status = 'completed';
+  } else if (hasInProgressOrCompleted) {
+    status = 'in_progress';
+  } else {
+    status = 'not_started';
+  }
+
+  console.log('Calculating objective status:', {
+    resourcesCount: resources.length,
+    resourceStatuses: resources.map(r => r.status),
+    calculatedStatus: status
+  });
+
+  return status;
+};
+
+// Helper function to calculate lesson status based on objectives
+export const calculateLessonStatus = (objectives: Objective[]): ProgressStatus => {
+  if (objectives.length === 0) {
+    return 'not_started';
+  }
+
+  const hasInProgressOrCompleted = objectives.some(o => o.status === 'in_progress' || o.status === 'completed');
+  const allCompleted = objectives.every(o => o.status === 'completed');
+
+  let status: ProgressStatus;
+  if (allCompleted) {
+    status = 'completed';
+  } else if (hasInProgressOrCompleted) {
+    status = 'in_progress';
+  } else {
+    status = 'not_started';
+  }
+
+  console.log('Calculating lesson status:', {
+    objectivesCount: objectives.length,
+    objectiveStatuses: objectives.map(o => o.status),
+    calculatedStatus: status
+  });
+
+  return status;
+};
 
 // Transform database row to app format
 const transformCourse = (row: any): Course => ({
@@ -8,6 +62,7 @@ const transformCourse = (row: any): Course => ({
   description: row.description || '',
   summary: row.summary || '',
   goals: row.goals || [],
+  goalAnswers: row.goal_answers || [],
   lessons: [], // Will be populated separately
   status: row.status,
   createdAt: row.created_at,
@@ -20,6 +75,7 @@ const transformLesson = (row: any): Lesson => ({
   summary: row.summary || '',
   projectQuestions: row.project_questions || '',
   goals: row.goals || [],
+  goalAnswers: row.goal_answers || [],
   objectives: [], // Will be populated separately
   status: row.status,
   createdAt: row.created_at,
@@ -31,7 +87,7 @@ const transformObjective = (row: any): Objective => ({
   title: row.title || '',
   summary: row.summary || '',
   resources: [], // Will be populated separately
-  status: row.status,
+  status: row.status || 'not_started',
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -161,6 +217,7 @@ export const createCourse = async (data: CreateCourse): Promise<Course | null> =
         description: data.description || null,
         summary: data.summary || null,
         goals: data.goals || [],
+        goal_answers: data.goalAnswers || [],
         status: data.status || 'not_started',
       })
       .select()
@@ -183,6 +240,7 @@ export const updateCourse = async (courseId: string, updates: Partial<CreateCour
         ...(updates.description !== undefined && { description: updates.description || null }),
         ...(updates.summary !== undefined && { summary: updates.summary || null }),
         ...(updates.goals !== undefined && { goals: updates.goals || [] }),
+        ...(updates.goalAnswers !== undefined && { goal_answers: updates.goalAnswers || [] }),
         ...(updates.status !== undefined && { status: updates.status }),
       })
       .eq('id', courseId);
@@ -221,6 +279,7 @@ export const createLesson = async (courseId: string, data: CreateLesson): Promis
         summary: data.summary || null,
         project_questions: data.projectQuestions || null,
         goals: data.goals || [],
+        goal_answers: data.goalAnswers || [],
         status: data.status || 'not_started',
       })
       .select()
@@ -243,6 +302,7 @@ export const updateLesson = async (lessonId: string, updates: Partial<CreateLess
         ...(updates.summary !== undefined && { summary: updates.summary || null }),
         ...(updates.projectQuestions !== undefined && { project_questions: updates.projectQuestions || null }),
         ...(updates.goals !== undefined && { goals: updates.goals || [] }),
+        ...(updates.goalAnswers !== undefined && { goal_answers: updates.goalAnswers || [] }),
         ...(updates.status !== undefined && { status: updates.status }),
       })
       .eq('id', lessonId);
@@ -285,6 +345,42 @@ export const createObjective = async (lessonId: string, data: CreateObjective): 
       .single();
 
     if (error) throw error;
+
+    // Auto-update lesson status based on objectives
+    const { data: allObjectives, error: objectivesError } = await supabase
+      .from('objectives')
+      .select('status')
+      .eq('lesson_id', lessonId);
+
+    if (objectivesError) {
+      console.error('Error fetching objectives for lesson status update:', objectivesError);
+    } else if (allObjectives) {
+      const objectives: Objective[] = allObjectives.map((o: any) => ({
+        id: '',
+        title: '',
+        summary: '',
+        resources: [],
+        status: o.status,
+        createdAt: '',
+        updatedAt: '',
+      }));
+
+      const newStatus = calculateLessonStatus(objectives);
+      const { error: lessonUpdateError } = await supabase
+        .from('lessons')
+        .update({ status: newStatus })
+        .eq('id', lessonId);
+
+      if (lessonUpdateError) {
+        console.error('Error updating lesson status:', lessonUpdateError);
+      } else {
+        console.log('Lesson status updated successfully (createObjective):', {
+          lessonId,
+          newStatus
+        });
+      }
+    }
+
     return objective ? transformObjective(objective) : null;
   } catch (error) {
     console.error('Error creating objective:', error);
@@ -294,6 +390,13 @@ export const createObjective = async (lessonId: string, data: CreateObjective): 
 
 export const updateObjective = async (objectiveId: string, updates: Partial<CreateObjective>): Promise<boolean> => {
   try {
+    // Get lesson_id before updating
+    const { data: objectiveData } = await supabase
+      .from('objectives')
+      .select('lesson_id')
+      .eq('id', objectiveId)
+      .single();
+
     const { error } = await supabase
       .from('objectives')
       .update({
@@ -304,6 +407,44 @@ export const updateObjective = async (objectiveId: string, updates: Partial<Crea
       .eq('id', objectiveId);
 
     if (error) throw error;
+
+    // Auto-update lesson status based on objectives
+    if (objectiveData?.lesson_id) {
+      const { data: allObjectives, error: objectivesError } = await supabase
+        .from('objectives')
+        .select('status')
+        .eq('lesson_id', objectiveData.lesson_id);
+
+      if (objectivesError) {
+        console.error('Error fetching objectives for lesson status update:', objectivesError);
+      } else if (allObjectives) {
+        const objectives: Objective[] = allObjectives.map((o: any) => ({
+          id: '',
+          title: '',
+          summary: '',
+          resources: [],
+          status: o.status,
+          createdAt: '',
+          updatedAt: '',
+        }));
+
+        const newStatus = calculateLessonStatus(objectives);
+        const { error: lessonUpdateError } = await supabase
+          .from('lessons')
+          .update({ status: newStatus })
+          .eq('id', objectiveData.lesson_id);
+
+        if (lessonUpdateError) {
+          console.error('Error updating lesson status:', lessonUpdateError);
+        } else {
+          console.log('Lesson status updated successfully (updateObjective):', {
+            lessonId: objectiveData.lesson_id,
+            newStatus
+          });
+        }
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Error updating objective:', error);
@@ -313,12 +454,71 @@ export const updateObjective = async (objectiveId: string, updates: Partial<Crea
 
 export const deleteObjective = async (objectiveId: string): Promise<boolean> => {
   try {
+    // Get lesson_id before deleting
+    const { data: objectiveData } = await supabase
+      .from('objectives')
+      .select('lesson_id')
+      .eq('id', objectiveId)
+      .single();
+
     const { error } = await supabase
       .from('objectives')
       .delete()
       .eq('id', objectiveId);
 
     if (error) throw error;
+
+    // Auto-update lesson status based on remaining objectives
+    if (objectiveData?.lesson_id) {
+      const { data: allObjectives, error: objectivesError } = await supabase
+        .from('objectives')
+        .select('status')
+        .eq('lesson_id', objectiveData.lesson_id);
+
+      if (objectivesError) {
+        console.error('Error fetching objectives for lesson status update:', objectivesError);
+      } else if (allObjectives && allObjectives.length > 0) {
+        const objectives: Objective[] = allObjectives.map((o: any) => ({
+          id: '',
+          title: '',
+          summary: '',
+          resources: [],
+          status: o.status,
+          createdAt: '',
+          updatedAt: '',
+        }));
+
+        const newStatus = calculateLessonStatus(objectives);
+        const { error: lessonUpdateError } = await supabase
+          .from('lessons')
+          .update({ status: newStatus })
+          .eq('id', objectiveData.lesson_id);
+
+        if (lessonUpdateError) {
+          console.error('Error updating lesson status:', lessonUpdateError);
+        } else {
+          console.log('Lesson status updated successfully (deleteObjective):', {
+            lessonId: objectiveData.lesson_id,
+            newStatus
+          });
+        }
+      } else {
+        // No objectives left, set to not_started
+        const { error: lessonUpdateError } = await supabase
+          .from('lessons')
+          .update({ status: 'not_started' })
+          .eq('id', objectiveData.lesson_id);
+
+        if (lessonUpdateError) {
+          console.error('Error updating lesson status to not_started:', lessonUpdateError);
+        } else {
+          console.log('Lesson status set to not_started (no objectives):', {
+            lessonId: objectiveData.lesson_id
+          });
+        }
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Error deleting objective:', error);
@@ -342,6 +542,85 @@ export const createResource = async (objectiveId: string, data: CreateResource):
       .single();
 
     if (error) throw error;
+
+    // Auto-update objective status based on resources
+    const { data: allResources, error: resourcesError } = await supabase
+      .from('resources')
+      .select('status')
+      .eq('objective_id', objectiveId);
+
+    if (resourcesError) {
+      console.error('Error fetching resources for objective status update:', resourcesError);
+    } else if (allResources) {
+      const resources: Resource[] = allResources.map((r: any) => ({
+        id: '',
+        description: '',
+        link: '',
+        summary: '',
+        status: r.status,
+        createdAt: '',
+        updatedAt: '',
+      }));
+
+        const newStatus = calculateObjectiveStatus(resources);
+        const { error: objectiveUpdateError } = await supabase
+          .from('objectives')
+          .update({ status: newStatus })
+          .eq('id', objectiveId);
+
+        if (objectiveUpdateError) {
+          console.error('Error updating objective status:', objectiveUpdateError);
+        } else {
+          console.log('Objective status updated successfully (createResource):', {
+            objectiveId,
+            newStatus
+          });
+
+          // Auto-update lesson status based on objectives
+          const { data: objectiveRow } = await supabase
+            .from('objectives')
+            .select('lesson_id')
+            .eq('id', objectiveId)
+            .single();
+
+          if (objectiveRow?.lesson_id) {
+            const { data: allObjectives, error: objectivesError } = await supabase
+              .from('objectives')
+              .select('status')
+              .eq('lesson_id', objectiveRow.lesson_id);
+
+            if (objectivesError) {
+              console.error('Error fetching objectives for lesson status update:', objectivesError);
+            } else if (allObjectives) {
+              const objectives: Objective[] = allObjectives.map((o: any) => ({
+                id: '',
+                title: '',
+                summary: '',
+                resources: [],
+                status: o.status,
+                createdAt: '',
+                updatedAt: '',
+              }));
+
+              const lessonStatus = calculateLessonStatus(objectives);
+              const { error: lessonUpdateError } = await supabase
+                .from('lessons')
+                .update({ status: lessonStatus })
+                .eq('id', objectiveRow.lesson_id);
+
+              if (lessonUpdateError) {
+                console.error('Error updating lesson status:', lessonUpdateError);
+              } else {
+                console.log('Lesson status updated successfully (createResource):', {
+                  lessonId: objectiveRow.lesson_id,
+                  newStatus: lessonStatus
+                });
+              }
+            }
+          }
+        }
+    }
+
     return resource ? transformResource(resource) : null;
   } catch (error) {
     console.error('Error creating resource:', error);
@@ -362,6 +641,93 @@ export const updateResource = async (resourceId: string, updates: Partial<Create
       .eq('id', resourceId);
 
     if (error) throw error;
+
+    // Auto-update objective status based on resources
+    const { data: resourceData } = await supabase
+      .from('resources')
+      .select('objective_id')
+      .eq('id', resourceId)
+      .single();
+
+      if (resourceData?.objective_id) {
+      const { data: allResources, error: resourcesError } = await supabase
+        .from('resources')
+        .select('status')
+        .eq('objective_id', resourceData.objective_id);
+
+      if (resourcesError) {
+        console.error('Error fetching resources for objective status update:', resourcesError);
+      } else if (allResources) {
+        const resources: Resource[] = allResources.map((r: any) => ({
+          id: '',
+          description: '',
+          link: '',
+          summary: '',
+          status: r.status,
+          createdAt: '',
+          updatedAt: '',
+        }));
+
+        const newStatus = calculateObjectiveStatus(resources);
+        const { error: objectiveUpdateError } = await supabase
+          .from('objectives')
+          .update({ status: newStatus })
+          .eq('id', resourceData.objective_id);
+
+        if (objectiveUpdateError) {
+          console.error('Error updating objective status:', objectiveUpdateError);
+        } else {
+          console.log('Objective status updated successfully (updateResource):', {
+            objectiveId: resourceData.objective_id,
+            newStatus
+          });
+
+          // Auto-update lesson status based on objectives
+          const { data: objectiveRow } = await supabase
+            .from('objectives')
+            .select('lesson_id')
+            .eq('id', resourceData.objective_id)
+            .single();
+
+          if (objectiveRow?.lesson_id) {
+            const { data: allObjectives, error: objectivesError } = await supabase
+              .from('objectives')
+              .select('status')
+              .eq('lesson_id', objectiveRow.lesson_id);
+
+            if (objectivesError) {
+              console.error('Error fetching objectives for lesson status update:', objectivesError);
+            } else if (allObjectives) {
+              const objectives: Objective[] = allObjectives.map((o: any) => ({
+                id: '',
+                title: '',
+                summary: '',
+                resources: [],
+                status: o.status,
+                createdAt: '',
+                updatedAt: '',
+              }));
+
+              const lessonStatus = calculateLessonStatus(objectives);
+              const { error: lessonUpdateError } = await supabase
+                .from('lessons')
+                .update({ status: lessonStatus })
+                .eq('id', objectiveRow.lesson_id);
+
+              if (lessonUpdateError) {
+                console.error('Error updating lesson status:', lessonUpdateError);
+              } else {
+                console.log('Lesson status updated successfully (updateResource):', {
+                  lessonId: objectiveRow.lesson_id,
+                  newStatus: lessonStatus
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Error updating resource:', error);
@@ -371,12 +737,157 @@ export const updateResource = async (resourceId: string, updates: Partial<Create
 
 export const deleteResource = async (resourceId: string): Promise<boolean> => {
   try {
+    // Get objective_id before deleting
+    const { data: resourceData } = await supabase
+      .from('resources')
+      .select('objective_id')
+      .eq('id', resourceId)
+      .single();
+
     const { error } = await supabase
       .from('resources')
       .delete()
       .eq('id', resourceId);
 
     if (error) throw error;
+
+    // Auto-update objective status based on remaining resources
+    if (resourceData?.objective_id) {
+      const { data: allResources, error: resourcesError } = await supabase
+        .from('resources')
+        .select('status')
+        .eq('objective_id', resourceData.objective_id);
+
+      if (resourcesError) {
+        console.error('Error fetching resources for objective status update:', resourcesError);
+      } else if (allResources && allResources.length > 0) {
+        const resources: Resource[] = allResources.map((r: any) => ({
+          id: '',
+          description: '',
+          link: '',
+          summary: '',
+          status: r.status,
+          createdAt: '',
+          updatedAt: '',
+        }));
+
+        const newStatus = calculateObjectiveStatus(resources);
+        const { error: objectiveUpdateError } = await supabase
+          .from('objectives')
+          .update({ status: newStatus })
+          .eq('id', resourceData.objective_id);
+
+        if (objectiveUpdateError) {
+          console.error('Error updating objective status:', objectiveUpdateError);
+        } else {
+          console.log('Objective status updated successfully (deleteResource):', {
+            objectiveId: resourceData.objective_id,
+            newStatus
+          });
+
+          // Auto-update lesson status based on objectives
+          const { data: objectiveRow } = await supabase
+            .from('objectives')
+            .select('lesson_id')
+            .eq('id', resourceData.objective_id)
+            .single();
+
+          if (objectiveRow?.lesson_id) {
+            const { data: allObjectives, error: objectivesError } = await supabase
+              .from('objectives')
+              .select('status')
+              .eq('lesson_id', objectiveRow.lesson_id);
+
+            if (objectivesError) {
+              console.error('Error fetching objectives for lesson status update:', objectivesError);
+            } else if (allObjectives) {
+              const objectives: Objective[] = allObjectives.map((o: any) => ({
+                id: '',
+                title: '',
+                summary: '',
+                resources: [],
+                status: o.status,
+                createdAt: '',
+                updatedAt: '',
+              }));
+
+              const lessonStatus = calculateLessonStatus(objectives);
+              const { error: lessonUpdateError } = await supabase
+                .from('lessons')
+                .update({ status: lessonStatus })
+                .eq('id', objectiveRow.lesson_id);
+
+              if (lessonUpdateError) {
+                console.error('Error updating lesson status:', lessonUpdateError);
+              } else {
+                console.log('Lesson status updated successfully (deleteResource):', {
+                  lessonId: objectiveRow.lesson_id,
+                  newStatus: lessonStatus
+                });
+              }
+            }
+          }
+        }
+      } else {
+        // No resources left, set to not_started
+        const { error: objectiveUpdateError } = await supabase
+          .from('objectives')
+          .update({ status: 'not_started' })
+          .eq('id', resourceData.objective_id);
+
+        if (objectiveUpdateError) {
+          console.error('Error updating objective status to not_started:', objectiveUpdateError);
+        } else {
+          console.log('Objective status set to not_started (no resources):', {
+            objectiveId: resourceData.objective_id
+          });
+
+          // Auto-update lesson status based on objectives
+          const { data: objectiveRow } = await supabase
+            .from('objectives')
+            .select('lesson_id')
+            .eq('id', resourceData.objective_id)
+            .single();
+
+          if (objectiveRow?.lesson_id) {
+            const { data: allObjectives, error: objectivesError } = await supabase
+              .from('objectives')
+              .select('status')
+              .eq('lesson_id', objectiveRow.lesson_id);
+
+            if (objectivesError) {
+              console.error('Error fetching objectives for lesson status update:', objectivesError);
+            } else if (allObjectives) {
+              const objectives: Objective[] = allObjectives.map((o: any) => ({
+                id: '',
+                title: '',
+                summary: '',
+                resources: [],
+                status: o.status,
+                createdAt: '',
+                updatedAt: '',
+              }));
+
+              const lessonStatus = calculateLessonStatus(objectives);
+              const { error: lessonUpdateError } = await supabase
+                .from('lessons')
+                .update({ status: lessonStatus })
+                .eq('id', objectiveRow.lesson_id);
+
+              if (lessonUpdateError) {
+                console.error('Error updating lesson status:', lessonUpdateError);
+              } else {
+                console.log('Lesson status updated successfully (deleteResource - no resources):', {
+                  lessonId: objectiveRow.lesson_id,
+                  newStatus: lessonStatus
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Error deleting resource:', error);

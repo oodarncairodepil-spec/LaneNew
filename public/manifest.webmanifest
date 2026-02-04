@@ -1,0 +1,23 @@
+{
+  "name": "Newlane",
+  "short_name": "Newlane",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "Track your study progress toward your degree with courses, lessons, objectives, and resources.",
+  "icons": [
+    {
+      "src": "https://app.newlane.edu/assets/logo-icon-Ci6l15LJ.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "https://app.newlane.edu/assets/logo-icon-Ci6l15LJ.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
+}
+
+

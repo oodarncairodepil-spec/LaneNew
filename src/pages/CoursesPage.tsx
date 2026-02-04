@@ -5,7 +5,7 @@ import { CourseCard } from '@/components/CourseCard';
 import { CourseFormDialog } from '@/components/CourseFormDialog';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
-import { Plus, BookOpen, GraduationCap } from 'lucide-react';
+import { Plus, BookOpen } from 'lucide-react';
 
 export default function CoursesPage() {
   const { courses, loading, error } = useStudy();
@@ -20,8 +20,12 @@ export default function CoursesPage() {
       <div className="container max-w-2xl py-6 pb-24">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <GraduationCap className="h-8 w-8" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+            <img
+              src="https://app.newlane.edu/assets/logo-icon-Ci6l15LJ.webp"
+              alt="New Lane icon"
+              className="h-12 w-12 rounded-xl"
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Study Progress

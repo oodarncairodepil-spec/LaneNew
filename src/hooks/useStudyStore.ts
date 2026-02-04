@@ -192,6 +192,24 @@ export function useStudyStore() {
         acc2 + o.resources.filter(r => r.status === 'completed').length, 0
       ), 0
     );
+    
+    // Calculate goals completion (course-level goals + lesson-level goals)
+    const courseGoalsTotal = course.goals?.length || 0;
+    const courseGoalsCompleted = (course.goalAnswers || [])
+      .slice(0, courseGoalsTotal)
+      .filter((answer) => Boolean(answer && answer.trim().length > 0)).length;
+
+    const lessonGoalsTotal = course.lessons.reduce((acc, lesson) => acc + (lesson.goals?.length || 0), 0);
+    const lessonGoalsCompleted = course.lessons.reduce((acc, lesson) => {
+      const total = lesson.goals?.length || 0;
+      const completed = (lesson.goalAnswers || [])
+        .slice(0, total)
+        .filter((answer) => Boolean(answer && answer.trim().length > 0)).length;
+      return acc + completed;
+    }, 0);
+
+    const totalGoals = courseGoalsTotal + lessonGoalsTotal;
+    const completedGoals = courseGoalsCompleted + lessonGoalsCompleted;
 
     return {
       totalLessons,
@@ -200,6 +218,8 @@ export function useStudyStore() {
       completedObjectives,
       totalResources,
       completedResources,
+      totalGoals,
+      completedGoals,
       progressPercent: totalResources > 0 ? Math.round((completedResources / totalResources) * 100) : 0,
     };
   }, []);

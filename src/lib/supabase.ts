@@ -20,6 +20,7 @@ export type Database = {
           description: string | null;
           summary: string | null;
           goals: string[];
+          goal_answers: string[];
           status: 'not_started' | 'in_progress' | 'completed';
           created_at: string;
           updated_at: string;
@@ -40,6 +41,7 @@ export type Database = {
           description?: string | null;
           summary?: string | null;
           goals?: string[];
+          goal_answers?: string[];
           status?: 'not_started' | 'in_progress' | 'completed';
           created_at?: string;
           updated_at?: string;
@@ -53,6 +55,7 @@ export type Database = {
           summary: string | null;
           project_questions: string | null;
           goals: string[];
+          goal_answers: string[];
           status: 'not_started' | 'in_progress' | 'completed';
           created_at: string;
           updated_at: string;
@@ -64,6 +67,7 @@ export type Database = {
           summary?: string | null;
           project_questions?: string | null;
           goals?: string[];
+          goal_answers?: string[];
           status?: 'not_started' | 'in_progress' | 'completed';
           created_at?: string;
           updated_at?: string;
@@ -75,6 +79,7 @@ export type Database = {
           summary?: string | null;
           project_questions?: string | null;
           goals?: string[];
+          goal_answers?: string[];
           status?: 'not_started' | 'in_progress' | 'completed';
           created_at?: string;
           updated_at?: string;
