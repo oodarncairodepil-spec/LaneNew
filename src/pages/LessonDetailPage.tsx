@@ -11,8 +11,9 @@ import { GoalItem } from '@/components/GoalItem';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Target, Edit, Download, HelpCircle } from 'lucide-react';
+import { Plus, Target, Edit, Download, HelpCircle, Copy } from 'lucide-react';
 import { downloadSummary, formatLessonSummary } from '@/lib/download';
+import { useToast } from '@/hooks/use-toast';
 import type { ProgressStatus, Resource } from '@/types/study';
 
 export default function LessonDetailPage() {
@@ -30,6 +31,7 @@ export default function LessonDetailPage() {
   } = useStudy();
 
   const lesson = getLesson(courseId!, lessonId!);
+  const { toast } = useToast();
   const [showObjectiveForm, setShowObjectiveForm] = useState(false);
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [showResourceForm, setShowResourceForm] = useState(false);
@@ -157,6 +159,50 @@ export default function LessonDetailPage() {
     });
   };
 
+  const handleCopyAllLinks = async () => {
+    try {
+      // Collect all links from all objectives' resources
+      const links: string[] = [];
+      
+      lesson.objectives.forEach((objective) => {
+        objective.resources.forEach((resource) => {
+          if (resource.link && resource.link.trim()) {
+            links.push(resource.link.trim());
+          }
+        });
+      });
+
+      // Remove duplicates
+      const uniqueLinks = Array.from(new Set(links));
+
+      if (uniqueLinks.length === 0) {
+        toast({
+          title: 'No links to copy',
+          description: 'There are no links in the objectives.',
+          variant: 'default',
+        });
+        return;
+      }
+
+      // Copy to clipboard (one link per line)
+      const linksText = uniqueLinks.join('\n');
+      await navigator.clipboard.writeText(linksText);
+
+      toast({
+        title: 'Links copied!',
+        description: `Copied ${uniqueLinks.length} link${uniqueLinks.length === 1 ? '' : 's'} to clipboard.`,
+        variant: 'default',
+      });
+    } catch (error) {
+      console.error('Failed to copy links:', error);
+      toast({
+        title: 'Failed to copy links',
+        description: 'Please try again or copy manually.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-2xl py-6 pb-24">
@@ -236,10 +282,20 @@ export default function LessonDetailPage() {
         {/* Objectives */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Objectives</h2>
-          <Button size="sm" onClick={() => setShowObjectiveForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Objective
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleCopyAllLinks}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Links
+            </Button>
+            <Button size="sm" onClick={() => setShowObjectiveForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Objective
+            </Button>
+          </div>
         </div>
 
         {lesson.objectives.length > 0 ? (

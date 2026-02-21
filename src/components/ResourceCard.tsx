@@ -4,7 +4,7 @@ import { useStudy } from '@/contexts/StudyContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
-import { FileText, Video, ExternalLink, MoreVertical, Trash2, Edit, Download, CheckCircle, Play, Pause } from 'lucide-react';
+import { FileText, Video, ExternalLink, MoreVertical, Trash2, Edit, Download, CheckCircle, Play, Pause, Copy } from 'lucide-react';
 import { ResourceViewer } from './ResourceViewer';
 import { isVideoUrl } from '@/lib/resource-utils';
 import {
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { downloadSummary, formatResourceSummary } from '@/lib/download';
+import { useToast } from '@/hooks/use-toast';
 import type { ProgressStatus } from '@/types/study';
 
 interface ResourceCardProps {
@@ -35,6 +36,7 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDelete, onEdit }: ResourceCardProps) {
   const { updateResourceStatus } = useStudy();
+  const { toast } = useToast();
   const Icon = isVideoUrl(resource.link) ? Video : FileText;
   const [isPlaying, setIsPlaying] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
@@ -48,6 +50,33 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
       content,
       format,
     });
+  };
+
+  const handleCopyLink = async () => {
+    if (!resource.link || !resource.link.trim()) {
+      toast({
+        title: 'No link to copy',
+        description: 'This resource does not have a link.',
+        variant: 'default',
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(resource.link.trim());
+      toast({
+        title: 'Link copied!',
+        description: 'The resource link has been copied to your clipboard.',
+        variant: 'default',
+      });
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast({
+        title: 'Failed to copy link',
+        description: 'Please try again or copy manually.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleStatusChange = async (status: ProgressStatus) => {
@@ -312,6 +341,12 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
               <Edit className="mr-2 h-4 w-4" />
               Edit Resource
             </DropdownMenuItem>
+            {resource.link && resource.link.trim() && (
+              <DropdownMenuItem onClick={handleCopyLink}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copy Link
+              </DropdownMenuItem>
+            )}
             {resource.summary && (
               <>
                 <DropdownMenuSeparator />
