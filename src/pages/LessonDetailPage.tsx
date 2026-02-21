@@ -293,30 +293,24 @@ export default function LessonDetailPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Lesson Goals</CardTitle>
-                {lesson.goalAnswers && lesson.goalAnswers.length > 0 && 
-                 lesson.goals.every((_, idx) => {
-                   const answer = lesson.goalAnswers?.[idx] || '';
-                   return answer.trim().length > 0;
-                 }) && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePreviewPDF}
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Preview PDF
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownloadGoals('pdf')}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Download PDF
-                    </Button>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviewPDF}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Preview PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadGoals('pdf')}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
