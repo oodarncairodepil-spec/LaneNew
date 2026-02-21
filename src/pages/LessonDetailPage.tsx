@@ -413,26 +413,6 @@ export default function LessonDetailPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Objectives</h2>
           <div className="flex gap-2">
-            {lesson.objectives.length > 0 && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviewObjectivesPDF}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadObjectivesPDF}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Download PDF
-                </Button>
-              </>
-            )}
             <Button 
               variant="outline" 
               size="sm" 
