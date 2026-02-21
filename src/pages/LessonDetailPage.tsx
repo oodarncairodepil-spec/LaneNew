@@ -50,6 +50,18 @@ export default function LessonDetailPage() {
   const [showObjectivesPDFPreview, setShowObjectivesPDFPreview] = useState(false);
   const [objectivesPdfPreviewUrl, setObjectivesPdfPreviewUrl] = useState<string | null>(null);
 
+  // Cleanup on unmount - MUST be before any early returns
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+      }
+      if (objectivesPdfPreviewUrl) {
+        URL.revokeObjectURL(objectivesPdfPreviewUrl);
+      }
+    };
+  }, [pdfPreviewUrl, objectivesPdfPreviewUrl]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -161,18 +173,6 @@ export default function LessonDetailPage() {
       }, 100);
     }
   };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl);
-      }
-      if (objectivesPdfPreviewUrl) {
-        URL.revokeObjectURL(objectivesPdfPreviewUrl);
-      }
-    };
-  }, [pdfPreviewUrl, objectivesPdfPreviewUrl]);
 
   const handleDownloadObjectivesPDF = () => {
     if (!lesson.objectives || lesson.objectives.length === 0) return;
