@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Objective } from '@/types/study';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Target, ChevronDown, ChevronUp, MoreVertical, Trash2, Plus } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,6 +25,7 @@ interface ObjectiveCardProps {
   onAddResource: () => void;
   onDeleteResource: (resourceId: string) => void;
   onEditResource: (resourceId: string) => void;
+  onUpdateSummary: (summary: string) => void;
 }
 
 export function ObjectiveCard({
@@ -34,6 +36,7 @@ export function ObjectiveCard({
   onAddResource,
   onDeleteResource,
   onEditResource,
+  onUpdateSummary,
 }: ObjectiveCardProps) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -111,7 +114,27 @@ export function ObjectiveCard({
         <CollapsibleContent>
           <CardContent className="p-4">
             <div className="space-y-3">
-              {objective.resources.map((resource) => (
+              {/* Summary/Notes Section */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Summary / Notes (Markdown)</label>
+                <Textarea
+                  value={objective.summary || ''}
+                  onChange={(e) => onUpdateSummary(e.target.value)}
+                  placeholder="Add your summary, notes, or key takeaways for this objective (supports Markdown)..."
+                  rows={4}
+                  className="resize-y text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use Markdown formatting for better organization (e.g., **bold**, *italic*, lists, etc.)
+                </p>
+              </div>
+
+              {/* Resources Section */}
+              <div className="space-y-3">
+                {objective.resources.length > 0 && (
+                  <div className="text-sm font-medium text-foreground mb-2">Resources:</div>
+                )}
+                {objective.resources.map((resource) => (
                 <ResourceCard
                   key={resource.id}
                   resource={resource}
@@ -121,7 +144,8 @@ export function ObjectiveCard({
                   onDelete={() => onDeleteResource(resource.id)}
                   onEdit={() => onEditResource(resource.id)}
                 />
-              ))}
+                ))}
+              </div>
 
               <Button
                 variant="outline"

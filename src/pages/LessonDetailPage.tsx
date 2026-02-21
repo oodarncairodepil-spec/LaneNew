@@ -30,6 +30,7 @@ export default function LessonDetailPage() {
     getLesson,
     updateLesson,
     addObjective,
+    updateObjective,
     deleteObjective,
     addResource,
     updateResource,
@@ -46,6 +47,8 @@ export default function LessonDetailPage() {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [showObjectivesPDFPreview, setShowObjectivesPDFPreview] = useState(false);
+  const [objectivesPdfPreviewUrl, setObjectivesPdfPreviewUrl] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -165,8 +168,66 @@ export default function LessonDetailPage() {
       if (pdfPreviewUrl) {
         URL.revokeObjectURL(pdfPreviewUrl);
       }
+      if (objectivesPdfPreviewUrl) {
+        URL.revokeObjectURL(objectivesPdfPreviewUrl);
+      }
     };
-  }, [pdfPreviewUrl]);
+  }, [pdfPreviewUrl, objectivesPdfPreviewUrl]);
+
+  const handleDownloadObjectivesPDF = () => {
+    if (!lesson.objectives || lesson.objectives.length === 0) return;
+
+    let content = `# ${lesson.title} - Objectives Summary\n\n`;
+    lesson.objectives.forEach((objective, index) => {
+      content += `## Objective ${index + 1}: ${objective.title}\n\n`;
+      if (objective.summary && objective.summary.trim()) {
+        content += `${objective.summary}\n\n`;
+      } else {
+        content += `*(No summary or notes yet)*\n\n`;
+      }
+      content += `---\n\n`;
+    });
+
+    downloadSummary({
+      filename: `${lesson.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_objectives`,
+      content,
+      format: 'pdf',
+    });
+  };
+
+  const handlePreviewObjectivesPDF = () => {
+    if (!lesson.objectives || lesson.objectives.length === 0) return;
+
+    let content = `# ${lesson.title} - Objectives Summary\n\n`;
+    lesson.objectives.forEach((objective, index) => {
+      content += `## Objective ${index + 1}: ${objective.title}\n\n`;
+      if (objective.summary && objective.summary.trim()) {
+        content += `${objective.summary}\n\n`;
+      } else {
+        content += `*(No summary or notes yet)*\n\n`;
+      }
+      content += `---\n\n`;
+    });
+
+    // Clean up previous URL if exists
+    if (objectivesPdfPreviewUrl) {
+      URL.revokeObjectURL(objectivesPdfPreviewUrl);
+    }
+
+    const url = generatePDFPreview(content);
+    setObjectivesPdfPreviewUrl(url);
+    setShowObjectivesPDFPreview(true);
+  };
+
+  const handleCloseObjectivesPDFPreview = () => {
+    setShowObjectivesPDFPreview(false);
+    if (objectivesPdfPreviewUrl) {
+      setTimeout(() => {
+        URL.revokeObjectURL(objectivesPdfPreviewUrl);
+        setObjectivesPdfPreviewUrl(null);
+      }, 100);
+    }
+  };
 
   const handleAddResource = (objectiveId: string) => {
     setSelectedObjectiveId(objectiveId);
@@ -352,6 +413,26 @@ export default function LessonDetailPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Objectives</h2>
           <div className="flex gap-2">
+            {lesson.objectives.length > 0 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviewObjectivesPDF}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadObjectivesPDF}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+              </>
+            )}
             <Button 
               variant="outline" 
               size="sm" 
@@ -381,6 +462,9 @@ export default function LessonDetailPage() {
                 onEditResource={(resourceId) => {
                   const resource = objective.resources.find(r => r.id === resourceId);
                   if (resource) handleEditResource(objective.id, resource);
+                }}
+                onUpdateSummary={async (summary) => {
+                  await updateObjective(courseId!, lessonId!, objective.id, { summary });
                 }}
               />
             ))}
@@ -427,7 +511,7 @@ export default function LessonDetailPage() {
           isEditing={Boolean(editingResource)}
         />
 
-        {/* PDF Preview Dialog - Fullscreen */}
+        {/* PDF Preview Dialog - Fullscreen (Lesson Goals) */}
         <Dialog open={showPDFPreview} onOpenChange={handleClosePDFPreview}>
           <DialogContent className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none">
             <div className="relative w-full h-full flex flex-col">
@@ -448,6 +532,33 @@ export default function LessonDetailPage() {
                   src={pdfPreviewUrl}
                   className="w-full h-full border-0"
                   title="PDF Preview"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* PDF Preview Dialog - Fullscreen (Objectives) */}
+        <Dialog open={showObjectivesPDFPreview} onOpenChange={handleCloseObjectivesPDFPreview}>
+          <DialogContent className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none">
+            <div className="relative w-full h-full flex flex-col">
+              {/* Minimal header with close button */}
+              <div className="absolute top-4 right-4 z-50">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCloseObjectivesPDFPreview}
+                  className="bg-background/90 backdrop-blur-sm"
+                >
+                  Close
+                </Button>
+              </div>
+              {/* Fullscreen PDF iframe */}
+              {objectivesPdfPreviewUrl && (
+                <iframe
+                  src={objectivesPdfPreviewUrl}
+                  className="w-full h-full border-0"
+                  title="Objectives PDF Preview"
                 />
               )}
             </div>
