@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStudy } from '@/contexts/StudyContext';
 import { PageHeader } from '@/components/PageHeader';
@@ -11,8 +11,15 @@ import { GoalItem } from '@/components/GoalItem';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Target, Edit, Download, HelpCircle, Copy } from 'lucide-react';
-import { downloadSummary, formatLessonSummary } from '@/lib/download';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Plus, Target, Edit, Download, HelpCircle, Copy, FileText, Eye } from 'lucide-react';
+import { downloadSummary, formatLessonSummary, generatePDFPreview } from '@/lib/download';
 import { useToast } from '@/hooks/use-toast';
 import type { ProgressStatus, Resource } from '@/types/study';
 
@@ -37,6 +44,8 @@ export default function LessonDetailPage() {
   const [showResourceForm, setShowResourceForm] = useState(false);
   const [selectedObjectiveId, setSelectedObjectiveId] = useState<string | null>(null);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -94,13 +103,13 @@ export default function LessonDetailPage() {
     });
   };
 
-  const handleDownloadGoals = (format: 'txt' | 'md') => {
+  const handleDownloadGoals = (format: 'txt' | 'md' | 'pdf') => {
     if (!lesson.goals || lesson.goals.length === 0) return;
 
     const answers = lesson.goalAnswers || [];
     let content = '';
     
-    if (format === 'md') {
+    if (format === 'md' || format === 'pdf') {
       content = `# ${lesson.title} - Goals and Answers\n\n`;
       lesson.goals.forEach((goal, index) => {
         content += `## Goal ${index + 1}\n\n**Question:** ${goal}\n\n**Answer:**\n\n${answers[index] || '(No answer yet)'}\n\n---\n\n`;
@@ -118,6 +127,46 @@ export default function LessonDetailPage() {
       format,
     });
   };
+
+  const handlePreviewPDF = () => {
+    if (!lesson.goals || lesson.goals.length === 0) return;
+
+    const answers = lesson.goalAnswers || [];
+    const content = `# ${lesson.title} - Goals and Answers\n\n`;
+    const fullContent = content + lesson.goals.map((goal, index) => {
+      return `## Goal ${index + 1}\n\n**Question:** ${goal}\n\n**Answer:**\n\n${answers[index] || '(No answer yet)'}\n\n---\n\n`;
+    }).join('');
+
+    // Clean up previous URL if exists
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+    }
+
+    const url = generatePDFPreview(fullContent);
+    setPdfPreviewUrl(url);
+    setShowPDFPreview(true);
+  };
+
+  // Cleanup PDF preview URL on unmount or when dialog closes
+  const handleClosePDFPreview = () => {
+    setShowPDFPreview(false);
+    if (pdfPreviewUrl) {
+      // Delay cleanup to allow iframe to finish loading
+      setTimeout(() => {
+        URL.revokeObjectURL(pdfPreviewUrl);
+        setPdfPreviewUrl(null);
+      }, 100);
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+      }
+    };
+  }, [pdfPreviewUrl]);
 
   const handleAddResource = (objectiveId: string) => {
     setSelectedObjectiveId(objectiveId);
@@ -242,7 +291,33 @@ export default function LessonDetailPage() {
         {lesson.goals && lesson.goals.length > 0 && (
           <Card className="mb-6 card-shadow">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Lesson Goals</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Lesson Goals</CardTitle>
+                {lesson.goalAnswers && lesson.goalAnswers.length > 0 && 
+                 lesson.goals.every((_, idx) => {
+                   const answer = lesson.goalAnswers?.[idx] || '';
+                   return answer.trim().length > 0;
+                 }) && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePreviewPDF}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Preview PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadGoals('pdf')}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Download PDF
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-0">
               <ul className="space-y-4">
@@ -357,6 +432,27 @@ export default function LessonDetailPage() {
           initialData={editingResource || undefined}
           isEditing={Boolean(editingResource)}
         />
+
+        {/* PDF Preview Dialog */}
+        <Dialog open={showPDFPreview} onOpenChange={handleClosePDFPreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] w-full">
+            <DialogHeader>
+              <DialogTitle>PDF Preview - {lesson.title} Goals</DialogTitle>
+              <DialogDescription>
+                Preview of the PDF before downloading
+              </DialogDescription>
+            </DialogHeader>
+            <div className="w-full h-[calc(90vh-120px)] overflow-auto border rounded-lg">
+              {pdfPreviewUrl && (
+                <iframe
+                  src={pdfPreviewUrl}
+                  className="w-full h-full min-h-[600px]"
+                  title="PDF Preview"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
