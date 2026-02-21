@@ -3,6 +3,7 @@ import type { Resource } from '@/types/study';
 import { useStudy } from '@/contexts/StudyContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FileText, Video, ExternalLink, MoreVertical, Trash2, Edit, Download, CheckCircle, Play, Pause, Copy } from 'lucide-react';
 import { ResourceViewer } from './ResourceViewer';
@@ -35,7 +36,7 @@ interface ResourceCardProps {
 }
 
 export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDelete, onEdit }: ResourceCardProps) {
-  const { updateResourceStatus } = useStudy();
+  const { updateResourceStatus, updateResource } = useStudy();
   const { toast } = useToast();
   const Icon = isVideoUrl(resource.link) ? Video : FileText;
   const [isPlaying, setIsPlaying] = useState(false);
@@ -308,26 +309,39 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
             </Select>
           </div>
 
-          {resource.summary && (
-            <div className="mt-2 flex items-start gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0 mt-0.5"
-                onClick={handlePlayPause}
-                aria-label={isPlaying ? 'Pause reading' : 'Play reading'}
-              >
-                {isPlaying ? (
-                  <Pause className="h-4 w-4" />
-                ) : (
-                  <Play className="h-4 w-4" />
-                )}
-              </Button>
-              <p className="flex-1 text-sm text-muted-foreground line-clamp-2">
-                {resource.summary}
+          {/* Summary/Notes Section - Editable */}
+          <div className="mt-3 space-y-2">
+            <label className="text-xs font-medium text-foreground">Summary / Notes (Markdown)</label>
+            <Textarea
+              value={resource.summary || ''}
+              onChange={async (e) => {
+                await updateResource(courseId, lessonId, objectiveId, resource.id, { summary: e.target.value });
+              }}
+              placeholder="Add your summary, notes, or key takeaways for this resource (supports Markdown)..."
+              rows={3}
+              className="resize-y text-sm"
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Use Markdown formatting (e.g., **bold**, *italic*, lists, etc.)
               </p>
+              {resource.summary && resource.summary.trim() && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={handlePlayPause}
+                  aria-label={isPlaying ? 'Pause reading' : 'Play reading'}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         <DropdownMenu>

@@ -443,9 +443,6 @@ export default function LessonDetailPage() {
                   const resource = objective.resources.find(r => r.id === resourceId);
                   if (resource) handleEditResource(objective.id, resource);
                 }}
-                onUpdateSummary={async (summary) => {
-                  await updateObjective(courseId!, lessonId!, objective.id, { summary });
-                }}
               />
             ))}
           </div>
