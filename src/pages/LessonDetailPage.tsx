@@ -433,20 +433,26 @@ export default function LessonDetailPage() {
           isEditing={Boolean(editingResource)}
         />
 
-        {/* PDF Preview Dialog */}
+        {/* PDF Preview Dialog - Fullscreen */}
         <Dialog open={showPDFPreview} onOpenChange={handleClosePDFPreview}>
-          <DialogContent className="max-w-4xl max-h-[90vh] w-full">
-            <DialogHeader>
-              <DialogTitle>PDF Preview - {lesson.title} Goals</DialogTitle>
-              <DialogDescription>
-                Preview of the PDF before downloading
-              </DialogDescription>
-            </DialogHeader>
-            <div className="w-full h-[calc(90vh-120px)] overflow-auto border rounded-lg">
+          <DialogContent className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none">
+            <div className="relative w-full h-full flex flex-col">
+              {/* Minimal header with close button */}
+              <div className="absolute top-4 right-4 z-50">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleClosePDFPreview}
+                  className="bg-background/90 backdrop-blur-sm"
+                >
+                  Close
+                </Button>
+              </div>
+              {/* Fullscreen PDF iframe */}
               {pdfPreviewUrl && (
                 <iframe
                   src={pdfPreviewUrl}
-                  className="w-full h-full min-h-[600px]"
+                  className="w-full h-full border-0"
                   title="PDF Preview"
                 />
               )}
