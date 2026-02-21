@@ -342,17 +342,45 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
 
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             {resource.link && (
-              <button
-                type="button"
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowViewer(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs text-info hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Open resource
+                </button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyLink();
+                  }}
+                  title="Copy link"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+            {resource.summary && resource.summary.trim() && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowViewer(true);
+                  handlePreviewPDF();
                 }}
-                className="inline-flex items-center gap-1 text-xs text-info hover:underline"
               >
-                <ExternalLink className="h-3 w-3" />
-                Open resource
-              </button>
+                <Eye className="mr-1.5 h-3 w-3" />
+                Preview PDF
+              </Button>
             )}
             <Select 
               value={resource.status} 
