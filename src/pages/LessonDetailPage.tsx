@@ -163,14 +163,16 @@ export default function LessonDetailPage() {
   };
 
   // Cleanup PDF preview URL on unmount or when dialog closes
-  const handleClosePDFPreview = () => {
-    setShowPDFPreview(false);
-    if (pdfPreviewUrl) {
-      // Delay cleanup to allow iframe to finish loading
-      setTimeout(() => {
-        URL.revokeObjectURL(pdfPreviewUrl);
-        setPdfPreviewUrl(null);
-      }, 100);
+  const handleClosePDFPreview = (open: boolean) => {
+    if (!open) {
+      setShowPDFPreview(false);
+      if (pdfPreviewUrl) {
+        // Delay cleanup to allow iframe to finish loading
+        setTimeout(() => {
+          URL.revokeObjectURL(pdfPreviewUrl);
+          setPdfPreviewUrl(null);
+        }, 100);
+      }
     }
   };
 
@@ -497,7 +499,7 @@ export default function LessonDetailPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={handleClosePDFPreview}
+                  onClick={() => handleClosePDFPreview(false)}
                   className="bg-background/90 backdrop-blur-sm"
                 >
                   Close
