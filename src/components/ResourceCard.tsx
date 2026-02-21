@@ -451,6 +451,69 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
         onOpenChange={setShowViewer}
         resource={resource}
       />
+
+      {/* Summary Edit Dialog */}
+      <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Summary / Notes</DialogTitle>
+            <DialogDescription>
+              Add or edit your summary and notes for this resource. Supports Markdown formatting.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="resource-summary">Summary / Notes (Markdown)</Label>
+              <Textarea
+                id="resource-summary"
+                value={summaryText}
+                onChange={(e) => setSummaryText(e.target.value)}
+                placeholder="Add your summary, notes, or key takeaways for this resource (supports Markdown)..."
+                rows={8}
+                className="resize-y"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use Markdown formatting for better organization (e.g., **bold**, *italic*, lists, etc.)
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button type="button" variant="outline" onClick={() => setShowSummaryDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSaveSummary}>
+              Save Summary
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Preview Dialog - Fullscreen */}
+      <Dialog open={showPDFPreview} onOpenChange={handleClosePDFPreview}>
+        <DialogContent className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none">
+          <div className="relative w-full h-full flex flex-col">
+            {/* Minimal header with close button */}
+            <div className="absolute top-4 right-4 z-50">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleClosePDFPreview}
+                className="bg-background/90 backdrop-blur-sm"
+              >
+                Close
+              </Button>
+            </div>
+            {/* Fullscreen PDF iframe */}
+            {pdfPreviewUrl && (
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full border-0"
+                title="Resource PDF Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
