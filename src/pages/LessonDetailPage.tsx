@@ -526,7 +526,7 @@ export default function LessonDetailPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={handleCloseObjectivesPDFPreview}
+                  onClick={() => handleCloseObjectivesPDFPreview(false)}
                   className="bg-background/90 backdrop-blur-sm"
                 >
                   Close

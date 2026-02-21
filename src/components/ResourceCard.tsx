@@ -125,13 +125,15 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
     setShowPDFPreview(true);
   };
 
-  const handleClosePDFPreview = () => {
-    setShowPDFPreview(false);
-    if (pdfPreviewUrl) {
-      setTimeout(() => {
-        URL.revokeObjectURL(pdfPreviewUrl);
-        setPdfPreviewUrl(null);
-      }, 100);
+  const handleClosePDFPreview = (open: boolean) => {
+    if (!open) {
+      setShowPDFPreview(false);
+      if (pdfPreviewUrl) {
+        setTimeout(() => {
+          URL.revokeObjectURL(pdfPreviewUrl);
+          setPdfPreviewUrl(null);
+        }, 100);
+      }
     }
   };
 
@@ -525,7 +527,7 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={handleClosePDFPreview}
+                onClick={() => handleClosePDFPreview(false)}
                 className="bg-background/90 backdrop-blur-sm"
               >
                 Close
