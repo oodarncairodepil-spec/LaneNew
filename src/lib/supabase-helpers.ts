@@ -198,12 +198,26 @@ export const loadAllData = async (): Promise<Course[]> => {
       }
     });
 
-    // Map lessons to courses
+    // Map lessons to courses and recalculate status
     const lessonsByCourseId = new Map<string, Lesson[]>();
     (lessonsData || []).forEach(lessonRow => {
       if (lessonRow.course_id) {
         const lesson = lessons.find(l => l.id === lessonRow.id);
         if (lesson) {
+          // Recalculate lesson status based on current goals and objectives
+          const lessonObjectives = objectivesByLessonId.get(lessonRow.id) || [];
+          const recalculatedStatus = calculateLessonStatus(
+            lessonObjectives,
+            lesson.goals,
+            lesson.goalAnswers
+          );
+          // Update lesson with recalculated status and objectives
+          const lessonWithObjectives: Lesson = {
+            ...lesson,
+            status: recalculatedStatus,
+            objectives: lessonObjectives,
+          };
+          
           if (!lessonsByCourseId.has(lessonRow.course_id)) {
             lessonsByCourseId.set(lessonRow.course_id, []);
           }

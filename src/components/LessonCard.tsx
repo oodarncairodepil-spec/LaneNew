@@ -159,6 +159,12 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
               {completedObjectives}/{totalObjectives} objectives
             </span>
           </div>
+          {/* #region agent log */}
+          {(() => {
+            fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LessonCard.tsx:162',message:'Displaying lesson status',data:{lessonId:lesson.id,lessonTitle:lesson.title,lessonStatus:lesson.status,totalGoals,completedGoals,totalObjectives,completedObjectives,objectivesStatuses:lesson.objectives?.map(o=>o.status)},timestamp:Date.now(),runId:'debug3',hypothesisId:'C'})}).catch(()=>{});
+            return null;
+          })()}
+          {/* #endregion */}
           <StatusBadge status={lesson.status} size="sm" />
         </div>
       </CardContent>
