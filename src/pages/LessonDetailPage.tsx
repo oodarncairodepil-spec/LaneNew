@@ -17,7 +17,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Plus, Target, Edit, Download, HelpCircle, Copy, FileText, Eye } from 'lucide-react';
 import { downloadSummary, formatLessonSummary, generatePDFPreview } from '@/lib/download';
