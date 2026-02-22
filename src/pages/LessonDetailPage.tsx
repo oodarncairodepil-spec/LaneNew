@@ -49,6 +49,8 @@ export default function LessonDetailPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [showObjectivesPDFPreview, setShowObjectivesPDFPreview] = useState(false);
   const [objectivesPdfPreviewUrl, setObjectivesPdfPreviewUrl] = useState<string | null>(null);
+  const [showGoalPDFPreview, setShowGoalPDFPreview] = useState(false);
+  const [goalPdfPreviewUrl, setGoalPdfPreviewUrl] = useState<string | null>(null);
 
   // Cleanup on unmount - MUST be before any early returns
   useEffect(() => {
@@ -59,8 +61,11 @@ export default function LessonDetailPage() {
       if (objectivesPdfPreviewUrl) {
         URL.revokeObjectURL(objectivesPdfPreviewUrl);
       }
+      if (goalPdfPreviewUrl) {
+        URL.revokeObjectURL(goalPdfPreviewUrl);
+      }
     };
-  }, [pdfPreviewUrl, objectivesPdfPreviewUrl]);
+  }, [pdfPreviewUrl, objectivesPdfPreviewUrl, goalPdfPreviewUrl]);
 
   if (loading) {
     return (
@@ -406,6 +411,15 @@ export default function LessonDetailPage() {
                     answer={lesson.goalAnswers?.[index] || ''}
                     index={index}
                     onAnswerChange={handleGoalAnswerChange}
+                    onPreviewPDF={(content) => {
+                      // Clean up previous URL if exists
+                      if (goalPdfPreviewUrl) {
+                        URL.revokeObjectURL(goalPdfPreviewUrl);
+                      }
+                      const url = generatePDFPreview(content);
+                      setGoalPdfPreviewUrl(url);
+                      setShowGoalPDFPreview(true);
+                    }}
                   />
                 ))}
               </ul>
@@ -599,6 +613,58 @@ export default function LessonDetailPage() {
                   src={objectivesPdfPreviewUrl}
                   className="w-full h-full border-0"
                   title="Objectives PDF Preview"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* PDF Preview Dialog - Fullscreen (Individual Goal) */}
+        <Dialog open={showGoalPDFPreview} onOpenChange={(open) => {
+          if (!open) {
+            setShowGoalPDFPreview(false);
+            if (goalPdfPreviewUrl) {
+              setTimeout(() => {
+                URL.revokeObjectURL(goalPdfPreviewUrl);
+                setGoalPdfPreviewUrl(null);
+              }, 100);
+            }
+          }
+        }}>
+          <DialogContent 
+            className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none"
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+          >
+            <DialogTitle className="sr-only">Goal PDF Preview</DialogTitle>
+            <DialogDescription className="sr-only">Preview of individual goal answer as PDF</DialogDescription>
+            <div className="relative w-full h-full flex flex-col">
+              {/* Minimal header with close button */}
+              <div className="absolute top-4 right-4 z-50">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowGoalPDFPreview(false);
+                    if (goalPdfPreviewUrl) {
+                      setTimeout(() => {
+                        URL.revokeObjectURL(goalPdfPreviewUrl);
+                        setGoalPdfPreviewUrl(null);
+                      }, 100);
+                    }
+                  }}
+                  className="bg-background/90 backdrop-blur-sm"
+                >
+                  Close
+                </Button>
+              </div>
+              {/* Fullscreen PDF iframe */}
+              {goalPdfPreviewUrl && (
+                <iframe
+                  src={goalPdfPreviewUrl}
+                  className="w-full h-full border-0"
+                  title="Goal PDF Preview"
                 />
               )}
             </div>

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Download, CheckCircle2 } from 'lucide-react';
-import { downloadSummary } from '@/lib/download';
+import { Play, Pause, Download, CheckCircle2, Eye } from 'lucide-react';
+import { downloadSummary, generatePDFPreview } from '@/lib/download';
 import { cn } from '@/lib/utils';
 
 interface GoalItemProps {
@@ -11,9 +11,10 @@ interface GoalItemProps {
   index: number;
   onAnswerChange: (index: number, answer: string) => void;
   onDownload?: (format: 'txt' | 'md') => void;
+  onPreviewPDF?: (content: string) => void;
 }
 
-export function GoalItem({ goal, answer, index, onAnswerChange, onDownload }: GoalItemProps) {
+export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPreviewPDF }: GoalItemProps) {
   const [localAnswer, setLocalAnswer] = useState(answer);
   const [isPlaying, setIsPlaying] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -204,6 +205,21 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload }: Go
     });
   };
 
+  const handlePreviewPDF = () => {
+    if (!localAnswer || !localAnswer.trim()) return;
+    
+    // Only include the markdown text from the answer, nothing else
+    const content = localAnswer.trim();
+    
+    if (onPreviewPDF) {
+      onPreviewPDF(content);
+    } else {
+      // Fallback: generate preview directly
+      const url = generatePDFPreview(content);
+      window.open(url, '_blank');
+    }
+  };
+
   const hasAnswer = localAnswer && localAnswer.trim().length > 0;
 
   return (
@@ -234,24 +250,35 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload }: Go
         />
         <div className="flex items-center gap-2">
           {hasAnswer && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handlePlayPause}
-              className="h-8"
-            >
-              {isPlaying ? (
-                <>
-                  <Pause className="mr-2 h-4 w-4" />
-                  Pause
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" />
-                  Play
-                </>
-              )}
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePlayPause}
+                className="h-8"
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause className="mr-2 h-4 w-4" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Play
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePreviewPDF}
+                className="h-8"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Preview PDF
+              </Button>
+            </>
           )}
           {onDownload && (localAnswer || goal) && (
             <>
