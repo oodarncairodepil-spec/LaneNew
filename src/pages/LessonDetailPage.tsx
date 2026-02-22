@@ -164,19 +164,21 @@ export default function LessonDetailPage() {
 
     const answers = lesson.goalAnswers || [];
     // Only include the markdown text from the answers, nothing else
+    // Filter out empty answers but allow preview even if only some goals have answers
     const content = lesson.goals.map((goal, index) => {
       const answer = answers[index] || '';
       return answer.trim();
     }).filter(answer => answer.length > 0).join('\n\n');
 
-    if (!content.trim()) return;
+    // If no content, show empty PDF rather than returning early
+    // This allows users to preview even when goals are not yet filled
 
     // Clean up previous URL if exists
     if (pdfPreviewUrl) {
       URL.revokeObjectURL(pdfPreviewUrl);
     }
 
-    const url = generatePDFPreview(content);
+    const url = generatePDFPreview(content || ' '); // Use space if empty to avoid blank PDF
     setPdfPreviewUrl(url);
     setShowPDFPreview(true);
   };
