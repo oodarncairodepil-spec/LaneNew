@@ -376,6 +376,12 @@ export const createObjective = async (lessonId: string, data: CreateObjective): 
     if (objectivesError) {
       console.error('Error fetching objectives for lesson status update:', objectivesError);
     } else if (allObjectives) {
+      const { data: lessonData } = await supabase
+        .from('lessons')
+        .select('goals, goal_answers')
+        .eq('id', lessonId)
+        .single();
+
       const objectives: Objective[] = allObjectives.map((o: any) => ({
         id: '',
         title: '',
@@ -386,7 +392,11 @@ export const createObjective = async (lessonId: string, data: CreateObjective): 
         updatedAt: '',
       }));
 
-      const newStatus = calculateLessonStatus(objectives);
+      const newStatus = calculateLessonStatus(
+        objectives,
+        lessonData?.goals || [],
+        lessonData?.goal_answers || []
+      );
       const { error: lessonUpdateError } = await supabase
         .from('lessons')
         .update({ status: newStatus })
