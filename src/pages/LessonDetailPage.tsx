@@ -111,10 +111,27 @@ export default function LessonDetailPage() {
         return ans.trim().length > 0;
       });
     
+    // Calculate lesson status based on goals and objectives
+    const hasGoalProgress = completedGoals > 0;
+    const hasObjectiveProgress = lesson.objectives.some(o => 
+      o.status === 'in_progress' || o.status === 'completed'
+    );
+    const allObjectivesCompleted = lesson.objectives.length > 0 && 
+      lesson.objectives.every(o => o.status === 'completed');
+    
+    let newStatus: ProgressStatus;
+    if (allGoalsHaveAnswers && allObjectivesCompleted) {
+      newStatus = 'completed';
+    } else if (hasGoalProgress || hasObjectiveProgress || allGoalsHaveAnswers || allObjectivesCompleted) {
+      newStatus = 'in_progress';
+    } else {
+      newStatus = 'not_started';
+    }
+    
     // Update lesson with new answers and status
     await updateLesson(courseId!, lessonId!, { 
       goalAnswers: newAnswers,
-      ...(allGoalsHaveAnswers && { status: 'completed' as ProgressStatus })
+      status: newStatus
     });
   };
 

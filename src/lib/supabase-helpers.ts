@@ -28,29 +28,50 @@ export const calculateObjectiveStatus = (resources: Resource[]): ProgressStatus 
   return status;
 };
 
-// Helper function to calculate lesson status based on objectives
-export const calculateLessonStatus = (objectives: Objective[]): ProgressStatus => {
-  if (objectives.length === 0) {
-    return 'not_started';
-  }
+// Helper function to calculate lesson status based on objectives and goals
+export const calculateLessonStatus = (
+  objectives: Objective[],
+  goals?: string[],
+  goalAnswers?: string[]
+): ProgressStatus => {
+  // Calculate goals completion
+  const totalGoals = goals?.length || 0;
+  const completedGoals = totalGoals > 0 && goalAnswers 
+    ? goalAnswers.filter((answer, index) => {
+        return answer && answer.trim().length > 0 && index < totalGoals;
+      }).length 
+    : 0;
+  const allGoalsCompleted = totalGoals > 0 && completedGoals === totalGoals;
+  const hasGoalProgress = completedGoals > 0 && completedGoals < totalGoals;
 
-  const hasInProgressOrCompleted = objectives.some(o => o.status === 'in_progress' || o.status === 'completed');
-  const allCompleted = objectives.every(o => o.status === 'completed');
+  // Calculate objectives completion
+  const totalObjectives = objectives.length;
+  const completedObjectives = objectives.filter(o => o.status === 'completed').length;
+  const inProgressObjectives = objectives.filter(o => o.status === 'in_progress').length;
+  const allObjectivesCompleted = totalObjectives > 0 && completedObjectives === totalObjectives;
+  const hasObjectiveProgress = completedObjectives > 0 || inProgressObjectives > 0;
+
+  // Determine status
+  // If everything is completed, status is 'completed'
+  const allCompleted = (totalGoals === 0 || allGoalsCompleted) && (totalObjectives === 0 || allObjectivesCompleted);
+  
+  // If there's any progress (goals or objectives), status is 'in_progress'
+  const hasAnyProgress = hasGoalProgress || hasObjectiveProgress || 
+    (completedGoals > 0 && totalGoals > 0) || 
+    (completedObjectives > 0 || inProgressObjectives > 0);
 
   let status: ProgressStatus;
-  if (allCompleted) {
+  if (allCompleted && (totalGoals > 0 || totalObjectives > 0)) {
     status = 'completed';
-  } else if (hasInProgressOrCompleted) {
+  } else if (hasAnyProgress) {
     status = 'in_progress';
   } else {
     status = 'not_started';
   }
 
-  console.log('Calculating lesson status:', {
-    objectivesCount: objectives.length,
-    objectiveStatuses: objectives.map(o => o.status),
-    calculatedStatus: status
-  });
+  // #region agent log
+  fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase-helpers.ts:calculateLessonStatus',message:'Calculating lesson status',data:{totalGoals,completedGoals,allGoalsCompleted,hasGoalProgress,totalObjectives,completedObjectives,inProgressObjectives,allObjectivesCompleted,hasObjectiveProgress,allCompleted,hasAnyProgress,calculatedStatus:status},timestamp:Date.now(),runId:'debug2',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
 
   return status;
 };
@@ -408,12 +429,18 @@ export const updateObjective = async (objectiveId: string, updates: Partial<Crea
 
     if (error) throw error;
 
-    // Auto-update lesson status based on objectives
+    // Auto-update lesson status based on objectives and goals
     if (objectiveData?.lesson_id) {
       const { data: allObjectives, error: objectivesError } = await supabase
         .from('objectives')
         .select('status')
         .eq('lesson_id', objectiveData.lesson_id);
+
+      const { data: lessonData } = await supabase
+        .from('lessons')
+        .select('goals, goal_answers')
+        .eq('id', objectiveData.lesson_id)
+        .single();
 
       if (objectivesError) {
         console.error('Error fetching objectives for lesson status update:', objectivesError);
@@ -426,9 +453,13 @@ export const updateObjective = async (objectiveId: string, updates: Partial<Crea
           status: o.status,
           createdAt: '',
           updatedAt: '',
-        }));
+        })));
 
-        const newStatus = calculateLessonStatus(objectives);
+        const newStatus = calculateLessonStatus(
+          objectives,
+          lessonData?.goals || [],
+          lessonData?.goal_answers || []
+        );
         const { error: lessonUpdateError } = await supabase
           .from('lessons')
           .update({ status: newStatus })
@@ -478,6 +509,12 @@ export const deleteObjective = async (objectiveId: string): Promise<boolean> => 
       if (objectivesError) {
         console.error('Error fetching objectives for lesson status update:', objectivesError);
       } else if (allObjectives && allObjectives.length > 0) {
+        const { data: lessonData } = await supabase
+          .from('lessons')
+          .select('goals, goal_answers')
+          .eq('id', objectiveData.lesson_id)
+          .single();
+
         const objectives: Objective[] = allObjectives.map((o: any) => ({
           id: '',
           title: '',
@@ -488,7 +525,11 @@ export const deleteObjective = async (objectiveId: string): Promise<boolean> => 
           updatedAt: '',
         }));
 
-        const newStatus = calculateLessonStatus(objectives);
+        const newStatus = calculateLessonStatus(
+          objectives,
+          lessonData?.goals || [],
+          lessonData?.goal_answers || []
+        );
         const { error: lessonUpdateError } = await supabase
           .from('lessons')
           .update({ status: newStatus })
@@ -602,7 +643,17 @@ export const createResource = async (objectiveId: string, data: CreateResource):
                 updatedAt: '',
               }));
 
-              const lessonStatus = calculateLessonStatus(objectives);
+              const { data: lessonData } = await supabase
+                .from('lessons')
+                .select('goals, goal_answers')
+                .eq('id', objectiveRow.lesson_id)
+                .single();
+
+              const lessonStatus = calculateLessonStatus(
+                objectives,
+                lessonData?.goals || [],
+                lessonData?.goal_answers || []
+              );
               const { error: lessonUpdateError } = await supabase
                 .from('lessons')
                 .update({ status: lessonStatus })
@@ -708,7 +759,17 @@ export const updateResource = async (resourceId: string, updates: Partial<Create
                 updatedAt: '',
               }));
 
-              const lessonStatus = calculateLessonStatus(objectives);
+              const { data: lessonData } = await supabase
+                .from('lessons')
+                .select('goals, goal_answers')
+                .eq('id', objectiveRow.lesson_id)
+                .single();
+
+              const lessonStatus = calculateLessonStatus(
+                objectives,
+                lessonData?.goals || [],
+                lessonData?.goal_answers || []
+              );
               const { error: lessonUpdateError } = await supabase
                 .from('lessons')
                 .update({ status: lessonStatus })
@@ -811,7 +872,17 @@ export const deleteResource = async (resourceId: string): Promise<boolean> => {
                 updatedAt: '',
               }));
 
-              const lessonStatus = calculateLessonStatus(objectives);
+              const { data: lessonData } = await supabase
+                .from('lessons')
+                .select('goals, goal_answers')
+                .eq('id', objectiveRow.lesson_id)
+                .single();
+
+              const lessonStatus = calculateLessonStatus(
+                objectives,
+                lessonData?.goals || [],
+                lessonData?.goal_answers || []
+              );
               const { error: lessonUpdateError } = await supabase
                 .from('lessons')
                 .update({ status: lessonStatus })
@@ -868,7 +939,17 @@ export const deleteResource = async (resourceId: string): Promise<boolean> => {
                 updatedAt: '',
               }));
 
-              const lessonStatus = calculateLessonStatus(objectives);
+              const { data: lessonData } = await supabase
+                .from('lessons')
+                .select('goals, goal_answers')
+                .eq('id', objectiveRow.lesson_id)
+                .single();
+
+              const lessonStatus = calculateLessonStatus(
+                objectives,
+                lessonData?.goals || [],
+                lessonData?.goal_answers || []
+              );
               const { error: lessonUpdateError } = await supabase
                 .from('lessons')
                 .update({ status: lessonStatus })
