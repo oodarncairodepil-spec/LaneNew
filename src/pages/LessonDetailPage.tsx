@@ -438,12 +438,15 @@ export default function LessonDetailPage() {
           <h2 className="font-semibold text-foreground">
             Objectives
             <span className="ml-2 text-sm font-normal text-muted-foreground">
+              {/* #region agent log */}
               {(() => {
                 const objectives = lesson.objectives || [];
                 const completed = objectives.filter(o => o.status === 'completed').length;
                 const total = objectives.length;
+                fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LessonDetailPage.tsx:441',message:'Objectives count in heading',data:{lessonId:lesson.id,lessonTitle:lesson.title,objectivesArrayLength:objectives.length,completed,total,objectiveIds:objectives.map(o=>o.id)},timestamp:Date.now(),runId:'debug5',hypothesisId:'E'})}).catch(()=>{});
                 return `${completed}/${total}`;
               })()}
+              {/* #endregion */}
             </span>
           </h2>
           <div className="flex gap-2">
@@ -464,6 +467,12 @@ export default function LessonDetailPage() {
 
         {lesson.objectives.length > 0 ? (
           <div className="space-y-4">
+            {/* #region agent log */}
+            {(() => {
+              fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LessonDetailPage.tsx:460',message:'Rendering objectives list',data:{lessonId:lesson.id,lessonTitle:lesson.title,objectivesToRender:lesson.objectives.length,objectiveIds:lesson.objectives.map(o=>o.id),objectiveTitles:lesson.objectives.map(o=>o.title)},timestamp:Date.now(),runId:'debug5',hypothesisId:'E'})}).catch(()=>{});
+              return null;
+            })()}
+            {/* #endregion */}
             {lesson.objectives.map((objective) => (
               <ObjectiveCard
                 key={objective.id}
