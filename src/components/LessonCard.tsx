@@ -10,6 +10,8 @@ import { generatePDFPreview } from '@/lib/download';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -176,6 +178,8 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
         >
+          <DialogTitle className="sr-only">Lesson Goals PDF Preview</DialogTitle>
+          <DialogDescription className="sr-only">Preview of lesson goals and answers as PDF</DialogDescription>
           <div className="relative w-full h-full flex flex-col">
             {/* Minimal header with close button */}
             <div className="absolute top-4 right-4 z-50">

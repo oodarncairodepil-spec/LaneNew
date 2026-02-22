@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Plus, Target, Edit, Download, HelpCircle, Copy, FileText, Eye } from 'lucide-react';
 import { downloadSummary, formatLessonSummary, generatePDFPreview } from '@/lib/download';
@@ -519,6 +520,8 @@ export default function LessonDetailPage() {
             onPointerDownOutside={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
           >
+            <DialogTitle className="sr-only">Lesson Goals PDF Preview</DialogTitle>
+            <DialogDescription className="sr-only">Preview of lesson goals and answers as PDF</DialogDescription>
             <div className="relative w-full h-full flex flex-col">
               {/* Minimal header with close button */}
               <div className="absolute top-4 right-4 z-50">
@@ -553,6 +556,8 @@ export default function LessonDetailPage() {
             onPointerDownOutside={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
           >
+            <DialogTitle className="sr-only">Objectives PDF Preview</DialogTitle>
+            <DialogDescription className="sr-only">Preview of lesson objectives as PDF</DialogDescription>
             <div className="relative w-full h-full flex flex-col">
               {/* Minimal header with close button */}
               <div className="absolute top-4 right-4 z-50">

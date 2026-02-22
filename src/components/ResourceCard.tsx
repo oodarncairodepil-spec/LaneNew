@@ -525,6 +525,8 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
         >
+          <DialogTitle className="sr-only">Resource PDF Preview</DialogTitle>
+          <DialogDescription className="sr-only">Preview of resource summary as PDF</DialogDescription>
           <div className="relative w-full h-full flex flex-col">
             {/* Minimal header with close button */}
             <div className="absolute top-4 right-4 z-50">
