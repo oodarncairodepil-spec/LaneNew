@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Objective } from '@/types/study';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,12 @@ export function ObjectiveCard({
   onEditResource,
 }: ObjectiveCardProps) {
   const [isOpen, setIsOpen] = useState(true);
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ObjectiveCard.tsx:42',message:'ObjectiveCard rendered',data:{objectiveId:objective.id,objectiveTitle:objective.title,lessonId,courseId},timestamp:Date.now(),runId:'debug5',hypothesisId:'E'})}).catch(()=>{});
+  }, [objective.id, lessonId, courseId]);
+  // #endregion
 
   const completedResources = objective.resources.filter(r => r.status === 'completed').length;
   const totalResources = objective.resources.length;
