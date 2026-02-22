@@ -111,6 +111,11 @@ export default function LessonDetailPage() {
         return ans.trim().length > 0;
       });
     
+    // Calculate completed goals count
+    const completedGoals = newAnswers.filter((answer, idx) => {
+      return answer && answer.trim().length > 0 && idx < (lesson.goals?.length || 0);
+    }).length;
+    
     // Calculate lesson status based on goals and objectives
     const hasGoalProgress = completedGoals > 0;
     const hasObjectiveProgress = lesson.objectives.some(o => 
