@@ -38,8 +38,12 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
     return answer && answer.trim().length > 0 && index < (lesson.goals?.length || 0);
   }).length || 0;
   
-  // Check if all goals are filled (have answers)
-  const allGoalsFilled = totalGoals > 0 && completedGoals === totalGoals;
+  // Check if all goals are filled (have answers) - same logic as LessonDetailPage
+  const allGoalsFilled = lesson.goals && lesson.goals.length > 0 && 
+    lesson.goals.every((_, idx) => {
+      const ans = (lesson.goalAnswers || [])[idx] || '';
+      return ans.trim().length > 0;
+    });
 
   // Get color classes for goals based on completion status
   const getGoalsColorClass = () => {
