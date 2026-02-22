@@ -463,7 +463,7 @@ export const updateObjective = async (objectiveId: string, updates: Partial<Crea
           status: o.status,
           createdAt: '',
           updatedAt: '',
-        })));
+        }));
 
         const newStatus = calculateLessonStatus(
           objectives,
