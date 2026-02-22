@@ -438,7 +438,12 @@ export default function LessonDetailPage() {
           <h2 className="font-semibold text-foreground">
             Objectives
             <span className="ml-2 text-sm font-normal text-muted-foreground">
-              ({lesson.objectives?.filter(o => o.status === 'completed').length || 0}/{lesson.objectives?.length || 0})
+              ({(() => {
+                const objectives = lesson.objectives || [];
+                const completed = objectives.filter(o => o.status === 'completed').length;
+                const total = objectives.length;
+                return `${completed}/${total}`;
+              })()})
             </span>
           </h2>
           <div className="flex gap-2">
