@@ -380,27 +380,7 @@ export default function LessonDetailPage() {
         {lesson.goals && lesson.goals.length > 0 && (
           <Card className="mb-6 card-shadow">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Lesson Goals</CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePreviewPDF}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownloadGoals('pdf')}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </Button>
-                </div>
-              </div>
+              <CardTitle className="text-base">Lesson Goals</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <ul className="space-y-4">
