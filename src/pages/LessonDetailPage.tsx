@@ -438,12 +438,15 @@ export default function LessonDetailPage() {
           <h2 className="font-semibold text-foreground">
             Objectives
             <span className="ml-2 text-sm font-normal text-muted-foreground">
-              ({(() => {
+              {/* #region agent log */}
+              {(() => {
                 const objectives = lesson.objectives || [];
                 const completed = objectives.filter(o => o.status === 'completed').length;
                 const total = objectives.length;
+                fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LessonDetailPage.tsx:441',message:'Objectives count calculation',data:{lessonId:lesson.id,lessonTitle:lesson.title,objectivesLength:objectives.length,objectivesIds:objectives.map(o=>o.id),completed,total},timestamp:Date.now(),runId:'debug4',hypothesisId:'D'})}).catch(()=>{});
                 return `${completed}/${total}`;
-              })()})
+              })()}
+              {/* #endregion */}
             </span>
           </h2>
           <div className="flex gap-2">
