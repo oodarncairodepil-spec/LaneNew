@@ -144,19 +144,13 @@ export default function LessonDetailPage() {
     if (!lesson.goals || lesson.goals.length === 0) return;
 
     const answers = lesson.goalAnswers || [];
-    let content = '';
-    
-    if (format === 'md' || format === 'pdf') {
-      content = `# ${lesson.title} - Goals and Answers\n\n`;
-      lesson.goals.forEach((goal, index) => {
-        content += `## Goal ${index + 1}\n\n**Question:** ${goal}\n\n**Answer:**\n\n${answers[index] || '(No answer yet)'}\n\n---\n\n`;
-      });
-    } else {
-      content = `${lesson.title} - Goals and Answers\n${'='.repeat(lesson.title.length + 20)}\n\n`;
-      lesson.goals.forEach((goal, index) => {
-        content += `Goal ${index + 1}\n${'-'.repeat(10)}\n\nQuestion: ${goal}\n\nAnswer:\n${answers[index] || '(No answer yet)'}\n\n${'='.repeat(40)}\n\n`;
-      });
-    }
+    // Only include the markdown text from the answers, nothing else
+    const content = lesson.goals.map((goal, index) => {
+      const answer = answers[index] || '';
+      return answer.trim();
+    }).filter(answer => answer.length > 0).join('\n\n');
+
+    if (!content.trim()) return;
 
     downloadSummary({
       filename: `${lesson.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_goals`,
