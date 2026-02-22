@@ -113,7 +113,10 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
   };
 
   const handlePreviewPDF = () => {
-    const content = formatResourceSummary(resource.description, resource.link || '', resource.summary || '', 'md');
+    // Only include the markdown text from the summary, nothing else
+    const content = resource.summary || '';
+    
+    if (!content.trim()) return;
     
     // Clean up previous URL if exists
     if (pdfPreviewUrl) {

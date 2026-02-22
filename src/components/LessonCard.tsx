@@ -68,17 +68,20 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
     if (!lesson.goals || lesson.goals.length === 0) return;
 
     const answers = lesson.goalAnswers || [];
-    const content = `# ${lesson.title} - Goals and Answers\n\n`;
-    const fullContent = content + lesson.goals.map((goal, index) => {
-      return `## Goal ${index + 1}\n\n**Question:** ${goal}\n\n**Answer:**\n\n${answers[index] || '(No answer yet)'}\n\n---\n\n`;
-    }).join('');
+    // Only include the markdown text from the answers, nothing else
+    const content = lesson.goals.map((goal, index) => {
+      const answer = answers[index] || '';
+      return answer.trim();
+    }).filter(answer => answer.length > 0).join('\n\n');
+
+    if (!content.trim()) return;
 
     // Clean up previous URL if exists
     if (pdfPreviewUrl) {
       URL.revokeObjectURL(pdfPreviewUrl);
     }
 
-    const url = generatePDFPreview(fullContent);
+    const url = generatePDFPreview(content);
     setPdfPreviewUrl(url);
     setShowPDFPreview(true);
   };
