@@ -435,7 +435,14 @@ export default function LessonDetailPage() {
 
         {/* Objectives */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">Objectives</h2>
+          <h2 className="font-semibold text-foreground">
+            Objectives
+            {lesson.objectives.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({lesson.objectives.filter(o => o.status === 'completed').length}/{lesson.objectives.length})
+              </span>
+            )}
+          </h2>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
