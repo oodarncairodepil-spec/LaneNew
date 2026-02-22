@@ -179,6 +179,11 @@ export const loadAllData = async (): Promise<Course[]> => {
 
     // Map objectives to lessons
     const objectivesByLessonId = new Map<string, Objective[]>();
+    // #region agent log
+    const targetLessonId = '88b23897-9122-4810-9df3-54c7780000e2';
+    const objectivesInDBForTargetLesson = (objectivesData || []).filter(o => o.lesson_id === targetLessonId);
+    fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase-helpers.ts:183',message:'Objectives in database for target lesson',data:{targetLessonId,totalObjectivesInDB:objectivesData?.length||0,objectivesForTargetLesson:objectivesInDBForTargetLesson.length,objectiveIdsForTargetLesson:objectivesInDBForTargetLesson.map(o=>o.id),objectiveTitlesForTargetLesson:objectivesInDBForTargetLesson.map(o=>o.title)},timestamp:Date.now(),runId:'debug6',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
     (objectivesData || []).forEach(objectiveRow => {
       if (objectiveRow.lesson_id) {
         const objective = objectives.find(o => o.id === objectiveRow.id);
@@ -191,9 +196,19 @@ export const loadAllData = async (): Promise<Course[]> => {
             resources: resourcesByObjectiveId.get(objectiveRow.id) || [],
           };
           objectivesByLessonId.get(objectiveRow.lesson_id)!.push(objectiveWithResources);
+        } else {
+          // #region agent log
+          if (objectiveRow.lesson_id === targetLessonId) {
+            fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase-helpers.ts:200',message:'Objective from DB not found in transformed array',data:{objectiveId:objectiveRow.id,objectiveTitle:objectiveRow.title,lessonId:objectiveRow.lesson_id,objectivesArrayLength:objectives.length},timestamp:Date.now(),runId:'debug6',hypothesisId:'F'})}).catch(()=>{});
+          }
+          // #endregion
         }
       }
     });
+    // #region agent log
+    const mappedObjectivesForTargetLesson = objectivesByLessonId.get(targetLessonId) || [];
+    fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase-helpers.ts:215',message:'Objectives mapped to target lesson',data:{targetLessonId,objectivesInDB:objectivesInDBForTargetLesson.length,mappedObjectives:mappedObjectivesForTargetLesson.length,mappedObjectiveIds:mappedObjectivesForTargetLesson.map(o=>o.id)},timestamp:Date.now(),runId:'debug6',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
 
     // Map lessons to courses and recalculate status
     const lessonsByCourseId = new Map<string, Lesson[]>();
