@@ -221,10 +221,6 @@ export const loadAllData = async (): Promise<Course[]> => {
           if (!lessonsByCourseId.has(lessonRow.course_id)) {
             lessonsByCourseId.set(lessonRow.course_id, []);
           }
-          const lessonWithObjectives: Lesson = {
-            ...lesson,
-            objectives: objectivesByLessonId.get(lessonRow.id) || [],
-          };
           lessonsByCourseId.get(lessonRow.course_id)!.push(lessonWithObjectives);
         }
       }
