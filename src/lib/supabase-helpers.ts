@@ -182,6 +182,9 @@ export const loadAllData = async (): Promise<Course[]> => {
 
     // Map objectives to lessons
     const objectivesByLessonId = new Map<string, Objective[]>();
+    // #region agent log
+    fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase-helpers.ts:183',message:'Loading objectives data',data:{totalObjectivesFromDB:objectivesData?.length||0,objectivesDataSample:objectivesData?.slice(0,5).map(o=>({id:o.id,lesson_id:o.lesson_id,title:o.title})),targetLessonId:'80c5a033-5a4e-4925-a15f-8d8fa85997bc'},timestamp:Date.now(),runId:'debug4',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     (objectivesData || []).forEach(objectiveRow => {
       if (objectiveRow.lesson_id) {
         const objective = objectives.find(o => o.id === objectiveRow.id);
@@ -194,9 +197,17 @@ export const loadAllData = async (): Promise<Course[]> => {
             resources: resourcesByObjectiveId.get(objectiveRow.id) || [],
           };
           objectivesByLessonId.get(objectiveRow.lesson_id)!.push(objectiveWithResources);
+        } else {
+          // #region agent log
+          fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase-helpers.ts:197',message:'Objective not found in transformed array',data:{objectiveRowId:objectiveRow.id,objectiveRowLessonId:objectiveRow.lesson_id,objectivesArrayLength:objectives.length},timestamp:Date.now(),runId:'debug4',hypothesisId:'D'})}).catch(()=>{});
+          // #endregion
         }
       }
     });
+    // #region agent log
+    const targetLessonObjectives = objectivesByLessonId.get('80c5a033-5a4e-4925-a15f-8d8fa85997bc') || [];
+    fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase-helpers.ts:202',message:'Objectives mapped to target lesson',data:{targetLessonId:'80c5a033-5a4e-4925-a15f-8d8fa85997bc',mappedObjectivesCount:targetLessonObjectives.length,mappedObjectiveIds:targetLessonObjectives.map(o=>o.id)},timestamp:Date.now(),runId:'debug4',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
 
     // Map lessons to courses and recalculate status
     const lessonsByCourseId = new Map<string, Lesson[]>();
