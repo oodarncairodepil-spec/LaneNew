@@ -37,6 +37,9 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
   const completedGoals = lesson.goalAnswers?.filter((answer, index) => {
     return answer && answer.trim().length > 0 && index < (lesson.goals?.length || 0);
   }).length || 0;
+  
+  // Check if all goals are filled (have answers)
+  const allGoalsFilled = totalGoals > 0 && completedGoals === totalGoals;
 
   // Get color classes for goals based on completion status
   const getGoalsColorClass = () => {
@@ -134,15 +137,17 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   {completedGoals}/{totalGoals} goals
                 </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-xs"
-                  onClick={handlePreviewPDF}
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  Preview PDF
-                </Button>
+                {allGoalsFilled && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={handlePreviewPDF}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Preview PDF
+                  </Button>
+                )}
               </div>
             )}
             <span className={cn("flex items-center gap-1", getObjectivesColorClass())}>
