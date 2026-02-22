@@ -441,10 +441,13 @@ export default function LessonDetailPage() {
               {/* #region agent log */}
               {(() => {
                 const objectives = lesson.objectives || [];
-                const completed = objectives.filter(o => o.status === 'completed').length;
-                const total = objectives.length;
-                fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LessonDetailPage.tsx:441',message:'Objectives count in heading',data:{lessonId:lesson.id,lessonTitle:lesson.title,objectivesArrayLength:objectives.length,completed,total,objectiveIds:objectives.map(o=>o.id)},timestamp:Date.now(),runId:'debug5',hypothesisId:'E'})}).catch(()=>{});
-                return `${completed}/${total}`;
+                // Count total resources across all objectives
+                const totalResources = objectives.reduce((sum, obj) => sum + (obj.resources?.length || 0), 0);
+                const completedResources = objectives.reduce((sum, obj) => {
+                  return sum + (obj.resources?.filter(r => r.status === 'completed').length || 0);
+                }, 0);
+                fetch('http://127.0.0.1:7257/ingest/1f6182fe-f87d-4bdd-9862-0f5f2955e2db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LessonDetailPage.tsx:441',message:'Resources count in heading',data:{lessonId:lesson.id,lessonTitle:lesson.title,objectivesCount:objectives.length,totalResources,completedResources,resourcesPerObjective:objectives.map(o=>({id:o.id,count:o.resources?.length||0}))},timestamp:Date.now(),runId:'debug7',hypothesisId:'G'})}).catch(()=>{});
+                return `(${completedResources}/${totalResources})`;
               })()}
               {/* #endregion */}
             </span>
