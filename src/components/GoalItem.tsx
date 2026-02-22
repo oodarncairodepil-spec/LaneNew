@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Download, CheckCircle2, Eye } from 'lucide-react';
+import { Play, Pause, Download, CheckCircle2, Eye, FileText } from 'lucide-react';
 import { downloadSummary, generatePDFPreview } from '@/lib/download';
 import { cn } from '@/lib/utils';
 
@@ -220,6 +220,19 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
     }
   };
 
+  const handleDownloadPDF = () => {
+    if (!localAnswer || !localAnswer.trim()) return;
+    
+    // Only include the markdown text from the answer, nothing else
+    const content = localAnswer.trim();
+    
+    downloadSummary({
+      filename: `goal_${index + 1}_${goal.substring(0, 30).replace(/[^a-z0-9]/gi, '_').toLowerCase()}`,
+      content,
+      format: 'pdf',
+    });
+  };
+
   const hasAnswer = localAnswer && localAnswer.trim().length > 0;
 
   return (
@@ -277,6 +290,15 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
               >
                 <Eye className="mr-2 h-4 w-4" />
                 Preview PDF
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDownloadPDF}
+                className="h-8"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Download PDF
               </Button>
             </>
           )}
