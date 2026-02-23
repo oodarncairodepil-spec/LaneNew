@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Target, Edit, Download, HelpCircle, Copy, FileText, Eye } from 'lucide-react';
 import { downloadSummary, formatLessonSummary, generatePDFPreview } from '@/lib/download';
+import { PdfPreviewViewer } from '@/components/PdfPreviewViewer';
 import { useToast } from '@/hooks/use-toast';
 import type { ProgressStatus, Resource } from '@/types/study';
 
@@ -553,10 +554,11 @@ export default function LessonDetailPage() {
                 </Button>
               </div>
               {/* Fullscreen PDF iframe */}
+              {/* PDF preview rendered in-page for mobile compatibility */}
               {pdfPreviewUrl && (
-                <iframe
-                  src={pdfPreviewUrl}
-                  className="w-full h-full border-0"
+                <PdfPreviewViewer
+                  pdfUrl={pdfPreviewUrl}
+                  className="flex-1 min-h-0"
                   title="PDF Preview"
                 />
               )}
@@ -589,10 +591,11 @@ export default function LessonDetailPage() {
                 </Button>
               </div>
               {/* Fullscreen PDF iframe */}
+              {/* PDF preview rendered in-page for mobile compatibility */}
               {objectivesPdfPreviewUrl && (
-                <iframe
-                  src={objectivesPdfPreviewUrl}
-                  className="w-full h-full border-0"
+                <PdfPreviewViewer
+                  pdfUrl={objectivesPdfPreviewUrl}
+                  className="flex-1 min-h-0"
                   title="Objectives PDF Preview"
                 />
               )}
@@ -641,10 +644,11 @@ export default function LessonDetailPage() {
                 </Button>
               </div>
               {/* Fullscreen PDF iframe */}
+              {/* PDF preview rendered in-page for mobile compatibility */}
               {goalPdfPreviewUrl && (
-                <iframe
-                  src={goalPdfPreviewUrl}
-                  className="w-full h-full border-0"
+                <PdfPreviewViewer
+                  pdfUrl={goalPdfPreviewUrl}
+                  className="flex-1 min-h-0"
                   title="Goal PDF Preview"
                 />
               )}

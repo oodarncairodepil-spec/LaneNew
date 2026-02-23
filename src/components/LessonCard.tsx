@@ -6,6 +6,7 @@ import { MoreVertical, Trash2, Target, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { generatePDFPreview } from '@/lib/download';
+import { PdfPreviewViewer } from '@/components/PdfPreviewViewer';
 import {
   Dialog,
   DialogContent,
@@ -199,11 +200,11 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
                 Close
               </Button>
             </div>
-            {/* Fullscreen PDF iframe */}
+            {/* PDF preview rendered in-page for mobile compatibility */}
             {pdfPreviewUrl && (
-              <iframe
-                src={pdfPreviewUrl}
-                className="w-full h-full border-0"
+              <PdfPreviewViewer
+                pdfUrl={pdfPreviewUrl}
+                className="flex-1 min-h-0"
                 title="Lesson Goals PDF Preview"
               />
             )}

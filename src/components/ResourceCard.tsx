@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { downloadSummary, formatResourceSummary, generatePDFPreview } from '@/lib/download';
+import { PdfPreviewViewer } from '@/components/PdfPreviewViewer';
 import { useToast } from '@/hooks/use-toast';
 import type { ProgressStatus } from '@/types/study';
 
@@ -546,10 +547,11 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
               </Button>
             </div>
             {/* Fullscreen PDF iframe */}
+            {/* PDF preview rendered in-page for mobile compatibility */}
             {pdfPreviewUrl && (
-              <iframe
-                src={pdfPreviewUrl}
-                className="w-full h-full border-0"
+              <PdfPreviewViewer
+                pdfUrl={pdfPreviewUrl}
+                className="flex-1 min-h-0"
                 title="Resource PDF Preview"
               />
             )}
