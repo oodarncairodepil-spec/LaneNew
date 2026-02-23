@@ -348,12 +348,12 @@ export default function LessonDetailPage() {
           title={lesson.title}
           backTo={`/course/${courseId}`}
           actions={
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleDownload('md')}>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" className="h-10 sm:h-9" onClick={() => handleDownload('md')}>
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowLessonForm(true)}>
+              <Button variant="outline" size="sm" className="h-10 sm:h-9" onClick={() => setShowLessonForm(true)}>
                 <Edit className="h-4 w-4" />
               </Button>
             </div>
@@ -427,7 +427,7 @@ export default function LessonDetailPage() {
         </Card>
 
         {/* Objectives */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-foreground">
             Objectives
             <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -445,16 +445,17 @@ export default function LessonDetailPage() {
               {/* #endregion */}
             </span>
           </h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               variant="outline" 
               size="sm" 
+              className="h-10 sm:h-9"
               onClick={handleCopyAllLinks}
             >
               <Copy className="mr-2 h-4 w-4" />
               Copy Links
             </Button>
-            <Button size="sm" onClick={() => setShowObjectiveForm(true)}>
+            <Button size="sm" className="h-10 sm:h-9" onClick={() => setShowObjectiveForm(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Objective
             </Button>

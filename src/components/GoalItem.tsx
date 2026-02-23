@@ -261,14 +261,14 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
             hasAnswer && "border-success/50 focus-visible:ring-success/20"
           )}
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {hasAnswer && (
             <>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handlePlayPause}
-                className="h-8"
+                className="h-10 sm:h-8"
               >
                 {isPlaying ? (
                   <>
@@ -286,7 +286,7 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
                 variant="ghost"
                 size="sm"
                 onClick={handlePreviewPDF}
-                className="h-8"
+                className="h-10 sm:h-8"
               >
                 <Eye className="mr-2 h-4 w-4" />
                 Preview PDF
@@ -295,7 +295,7 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
                 variant="ghost"
                 size="sm"
                 onClick={handleDownloadPDF}
-                className="h-8"
+                className="h-10 sm:h-8"
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Download PDF
@@ -308,7 +308,7 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
                 variant="ghost"
                 size="sm"
                 onClick={() => handleDownload('txt')}
-                className="h-8"
+                className="h-10 sm:h-8"
               >
                 <Download className="mr-2 h-4 w-4" />
                 TXT
@@ -317,7 +317,7 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
                 variant="ghost"
                 size="sm"
                 onClick={() => handleDownload('md')}
-                className="h-8"
+                className="h-10 sm:h-8"
               >
                 <Download className="mr-2 h-4 w-4" />
                 MD

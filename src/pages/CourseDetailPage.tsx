@@ -7,7 +7,6 @@ import { LessonFormDialog } from '@/components/LessonFormDialog';
 import { CourseFormDialog } from '@/components/CourseFormDialog';
 import { EmptyState } from '@/components/EmptyState';
 import { ProgressBar } from '@/components/ProgressBar';
-import { StatusBadge } from '@/components/StatusBadge';
 import { GoalItem } from '@/components/GoalItem';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -158,7 +157,7 @@ export default function CourseDetailPage() {
           description={course.description}
           backTo="/"
           actions={
-            <Button variant="outline" size="sm" onClick={() => setShowCourseForm(true)}>
+            <Button variant="outline" size="sm" className="h-10 sm:h-9" onClick={() => setShowCourseForm(true)}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Button>
@@ -168,25 +167,31 @@ export default function CourseDetailPage() {
         {/* Progress & Status */}
         <Card className="mb-6 card-shadow">
           <CardContent className="p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex-1">
-                <ProgressBar value={stats.progressPercent} showLabel size="md" />
-                <div className="mt-2 flex items-center gap-x-3 text-xs whitespace-nowrap overflow-x-auto">
-                  <span className={cn("flex items-center gap-1 shrink-0", getLessonsColorClass())}>
-                    {stats.completedLessons}/{stats.totalLessons} lessons
-                  </span>
-                  <span className={cn("flex items-center gap-1 shrink-0", getGoalsColorClass())}>
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    {stats.completedGoals}/{stats.totalGoals} goals
-                  </span>
-                  <span className={cn("flex items-center gap-1 shrink-0", getObjectivesColorClass())}>
-                    <Target className="h-3.5 w-3.5" />
-                    {stats.completedObjectives}/{stats.totalObjectives} objectives
-                  </span>
-                  <span className={cn("flex items-center gap-1 shrink-0", getResourcesColorClass())}>
-                    {stats.completedResources}/{stats.totalResources} resources
-                  </span>
+            <div className="flex flex-col gap-4">
+              <div className="w-full">
+                <div className="mb-1.5 flex justify-between items-center text-xs text-muted-foreground">
+                  <span>Progress</span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("flex items-center gap-1", getResourcesColorClass())}>
+                      {stats.completedResources}/{stats.totalResources} resources
+                    </span>
+                    <span className="font-medium">{stats.progressPercent}%</span>
+                  </div>
                 </div>
+                <ProgressBar value={stats.progressPercent} showLabel={false} size="md" />
+              </div>
+              <div className="flex items-center gap-2 sm:gap-x-3 text-xs flex-wrap">
+                <span className={cn("flex items-center gap-1 shrink-0", getLessonsColorClass())}>
+                  {stats.completedLessons}/{stats.totalLessons} lessons
+                </span>
+                <span className={cn("flex items-center gap-1 shrink-0", getGoalsColorClass())}>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {stats.completedGoals}/{stats.totalGoals} goals
+                </span>
+                <span className={cn("flex items-center gap-1 shrink-0", getObjectivesColorClass())}>
+                  <Target className="h-3.5 w-3.5" />
+                  {stats.completedObjectives}/{stats.totalObjectives} objectives
+                </span>
               </div>
             </div>
           </CardContent>
@@ -204,7 +209,7 @@ export default function CourseDetailPage() {
                       {courseGoalsCompleted}/{courseGoalsTotal} goals
                     </span>
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8">
                         {isCourseGoalsOpen ? (
                           <ChevronUp className="h-4 w-4" />
                         ) : (
@@ -242,12 +247,12 @@ export default function CourseDetailPage() {
                 <CardTitle className="text-base">Course Summary</CardTitle>
                 <div className="flex items-center gap-2">
                   {course.summary && (
-                    <Button variant="ghost" size="sm" onClick={() => handleDownload('txt')}>
+                    <Button variant="ghost" size="sm" className="h-10 w-10 sm:h-9 sm:w-9" onClick={() => handleDownload('txt')}>
                       <Download className="h-4 w-4" />
                     </Button>
                   )}
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8">
                       {isCourseSummaryOpen ? (
                         <ChevronUp className="h-4 w-4" />
                       ) : (
@@ -273,9 +278,9 @@ export default function CourseDetailPage() {
         </Card>
 
         {/* Lessons */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-foreground">Lessons</h2>
-          <Button size="sm" onClick={() => setShowLessonForm(true)}>
+          <Button size="sm" className="h-10 sm:h-9" onClick={() => setShowLessonForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Lesson
           </Button>

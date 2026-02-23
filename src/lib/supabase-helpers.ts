@@ -191,9 +191,13 @@ export const loadAllData = async (): Promise<Course[]> => {
           if (!objectivesByLessonId.has(objectiveRow.lesson_id)) {
             objectivesByLessonId.set(objectiveRow.lesson_id, []);
           }
+          const objectiveResources = resourcesByObjectiveId.get(objectiveRow.id) || [];
+          // Recalculate objective status based on current resources
+          const recalculatedStatus = calculateObjectiveStatus(objectiveResources);
           const objectiveWithResources: Objective = {
             ...objective,
-            resources: resourcesByObjectiveId.get(objectiveRow.id) || [],
+            resources: objectiveResources,
+            status: recalculatedStatus,
           };
           objectivesByLessonId.get(objectiveRow.lesson_id)!.push(objectiveWithResources);
         } else {

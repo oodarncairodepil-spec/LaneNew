@@ -22,7 +22,7 @@ export function PageHeader({ title, description, backTo, actions, className }: P
           variant="ghost"
           size="sm"
           onClick={() => navigate(backTo)}
-          className="mb-3 -ml-2 text-muted-foreground hover:text-foreground"
+          className="mb-3 -ml-2 h-10 sm:h-9 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-1.5 h-4 w-4" />
           Back
@@ -37,7 +37,7 @@ export function PageHeader({ title, description, backTo, actions, className }: P
             <p className="mt-1 text-muted-foreground">{description}</p>
           )}
         </div>
-        {actions && <div className="flex gap-2">{actions}</div>}
+        {actions && <div className="flex gap-2 flex-wrap">{actions}</div>}
       </div>
     </header>
   );

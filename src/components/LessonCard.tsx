@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lesson } from '@/types/study';
 import { Card, CardContent } from '@/components/ui/card';
-import { StatusBadge } from '@/components/StatusBadge';
 import { MoreVertical, Trash2, Target, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,6 +24,12 @@ interface LessonCardProps {
   courseId: string;
   onDelete: () => void;
 }
+
+const statusBorderClass: Record<Lesson['status'], string> = {
+  not_started: 'border-border',
+  in_progress: 'border-warning/60',
+  completed: 'border-success/60',
+};
 
 export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
   const navigate = useNavigate();
@@ -100,7 +105,10 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
 
   return (
     <Card 
-      className="group cursor-pointer card-shadow card-hover animate-fade-in"
+      className={cn(
+        'group cursor-pointer card-shadow card-hover animate-fade-in border-l-4',
+        statusBorderClass[lesson.status]
+      )}
       onClick={() => navigate(`/course/${courseId}/lesson/${lesson.id}`)}
     >
       <CardContent className="p-4">
@@ -119,7 +127,7 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+              <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8 shrink-0">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -138,8 +146,8 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
           </DropdownMenu>
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
+        <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-xs">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {totalGoals > 0 && (
               <div className="flex items-center gap-2">
                 <span className={cn("flex items-center gap-1", getGoalsColorClass())}>
@@ -150,7 +158,7 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 px-2 text-xs"
+                    className="h-8 sm:h-6 px-2 text-xs"
                     onClick={handlePreviewPDF}
                   >
                     <Eye className="h-3 w-3 mr-1" />
@@ -164,7 +172,6 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
               {completedObjectives}/{totalObjectives} objectives
             </span>
           </div>
-          <StatusBadge status={lesson.status} size="sm" />
         </div>
       </CardContent>
 

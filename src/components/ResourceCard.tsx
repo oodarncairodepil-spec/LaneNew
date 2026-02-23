@@ -362,7 +362,7 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-10 w-10 sm:h-7 sm:w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleCopyLink();
@@ -377,7 +377,7 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs"
+                className="h-10 sm:h-7 text-xs"
                 onClick={(e) => {
                   e.stopPropagation();
                   handlePreviewPDF();
@@ -391,7 +391,7 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
               value={resource.status} 
               onValueChange={(v) => handleStatusChange(v as ProgressStatus)}
             >
-              <SelectTrigger className="h-7 w-[130px] text-xs">
+              <SelectTrigger className="h-10 sm:h-7 w-[130px] sm:w-[130px] text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -407,7 +407,7 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 shrink-0 mt-0.5"
+                className="h-10 w-10 sm:h-6 sm:w-6 shrink-0 mt-0.5"
                 onClick={handlePlayPause}
                 aria-label={isPlaying ? 'Pause reading' : 'Play reading'}
               >
@@ -426,7 +426,7 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+            <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-7 sm:w-7 shrink-0">
               <MoreVertical className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>

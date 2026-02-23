@@ -92,7 +92,7 @@ export function ObjectiveCard({
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -107,7 +107,7 @@ export function ObjectiveCard({
               </DropdownMenuContent>
             </DropdownMenu>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8">
                 {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
             </CollapsibleTrigger>

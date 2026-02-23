@@ -53,7 +53,7 @@ export function CourseCard({ course }: CourseCardProps) {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+              <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8 shrink-0">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -72,7 +72,7 @@ export function CourseCard({ course }: CourseCardProps) {
           </DropdownMenu>
         </div>
 
-        <div className="mt-4 flex items-center gap-x-3 text-xs whitespace-nowrap overflow-x-auto">
+        <div className="mt-4 flex items-center gap-2 sm:gap-x-3 text-xs flex-wrap">
           <span className={cn('flex items-center gap-1 shrink-0', getStatColorClass(stats.completedLessons, stats.totalLessons))}>
             {stats.completedLessons}/{stats.totalLessons} {stats.totalLessons === 1 ? 'lesson' : 'lessons'}
           </span>
