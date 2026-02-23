@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Target, Edit, Download, HelpCircle, Copy, FileText, Eye } from 'lucide-react';
 import { downloadSummary, formatLessonSummary, generatePDFPreview } from '@/lib/download';
-import { PdfPreviewViewer } from '@/components/PdfPreviewViewer';
 import { useToast } from '@/hooks/use-toast';
 import type { ProgressStatus, Resource } from '@/types/study';
 
@@ -531,7 +530,7 @@ export default function LessonDetailPage() {
 
         {/* PDF Preview Dialog - Fullscreen (Lesson Goals) */}
         <Dialog open={showPDFPreview} onOpenChange={handleClosePDFPreview}>
-          <DialogContent 
+          <DialogContent
             className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none"
             onPointerDownOutside={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
@@ -539,7 +538,6 @@ export default function LessonDetailPage() {
             <DialogTitle className="sr-only">Lesson Goals PDF Preview</DialogTitle>
             <DialogDescription className="sr-only">Preview of lesson goals and answers as PDF</DialogDescription>
             <div className="relative w-full h-full flex flex-col">
-              {/* Minimal header with close button */}
               <div className="absolute top-4 right-4 z-50">
                 <Button
                   variant="secondary"
@@ -553,13 +551,11 @@ export default function LessonDetailPage() {
                   Close
                 </Button>
               </div>
-              {/* Fullscreen PDF iframe */}
-              {/* PDF preview rendered in-page for mobile compatibility */}
               {pdfPreviewUrl && (
-                <PdfPreviewViewer
-                  pdfUrl={pdfPreviewUrl}
-                  className="flex-1 min-h-0"
-                  title="PDF Preview"
+                <iframe
+                  src={pdfPreviewUrl}
+                  className="w-full h-full border-0"
+                  title="Lesson Goals PDF Preview"
                 />
               )}
             </div>
@@ -567,8 +563,8 @@ export default function LessonDetailPage() {
         </Dialog>
 
         {/* PDF Preview Dialog - Fullscreen (Objectives) */}
-        <Dialog open={showObjectivesPDFPreview} onOpenChange={handleCloseObjectivesPDFPreview}>
-          <DialogContent 
+        <Dialog open={showObjectivesPDFPreview} onOpenChange={(open) => { if (!open) handleCloseObjectivesPDFPreview(); }}>
+          <DialogContent
             className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none"
             onPointerDownOutside={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
@@ -576,26 +572,23 @@ export default function LessonDetailPage() {
             <DialogTitle className="sr-only">Objectives PDF Preview</DialogTitle>
             <DialogDescription className="sr-only">Preview of lesson objectives as PDF</DialogDescription>
             <div className="relative w-full h-full flex flex-col">
-              {/* Minimal header with close button */}
               <div className="absolute top-4 right-4 z-50">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleCloseObjectivesPDFPreview(false);
+                    handleCloseObjectivesPDFPreview();
                   }}
                   className="bg-background/90 backdrop-blur-sm"
                 >
                   Close
                 </Button>
               </div>
-              {/* Fullscreen PDF iframe */}
-              {/* PDF preview rendered in-page for mobile compatibility */}
               {objectivesPdfPreviewUrl && (
-                <PdfPreviewViewer
-                  pdfUrl={objectivesPdfPreviewUrl}
-                  className="flex-1 min-h-0"
+                <iframe
+                  src={objectivesPdfPreviewUrl}
+                  className="w-full h-full border-0"
                   title="Objectives PDF Preview"
                 />
               )}
@@ -615,7 +608,7 @@ export default function LessonDetailPage() {
             }
           }
         }}>
-          <DialogContent 
+          <DialogContent
             className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none"
             onPointerDownOutside={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
@@ -623,7 +616,6 @@ export default function LessonDetailPage() {
             <DialogTitle className="sr-only">Goal PDF Preview</DialogTitle>
             <DialogDescription className="sr-only">Preview of individual goal answer as PDF</DialogDescription>
             <div className="relative w-full h-full flex flex-col">
-              {/* Minimal header with close button */}
               <div className="absolute top-4 right-4 z-50">
                 <Button
                   variant="secondary"
@@ -643,12 +635,10 @@ export default function LessonDetailPage() {
                   Close
                 </Button>
               </div>
-              {/* Fullscreen PDF iframe */}
-              {/* PDF preview rendered in-page for mobile compatibility */}
               {goalPdfPreviewUrl && (
-                <PdfPreviewViewer
-                  pdfUrl={goalPdfPreviewUrl}
-                  className="flex-1 min-h-0"
+                <iframe
+                  src={goalPdfPreviewUrl}
+                  className="w-full h-full border-0"
                   title="Goal PDF Preview"
                 />
               )}

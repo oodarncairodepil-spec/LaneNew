@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStudy } from '@/contexts/StudyContext';
 import { PageHeader } from '@/components/PageHeader';
@@ -9,11 +9,17 @@ import { EmptyState } from '@/components/EmptyState';
 import { ProgressBar } from '@/components/ProgressBar';
 import { GoalItem } from '@/components/GoalItem';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Plus, FileText, Edit, Download, CheckCircle2, Target, ChevronDown, ChevronUp } from 'lucide-react';
-import { downloadSummary, formatCourseSummary } from '@/lib/download';
+import { downloadSummary, formatCourseSummary, generatePDFPreview } from '@/lib/download';
 import { cn } from '@/lib/utils';
 import type { ProgressStatus } from '@/types/study';
 
@@ -27,6 +33,16 @@ export default function CourseDetailPage() {
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [isCourseGoalsOpen, setIsCourseGoalsOpen] = useState(false);
   const [isCourseSummaryOpen, setIsCourseSummaryOpen] = useState(false);
+  const [showGoalPDFPreview, setShowGoalPDFPreview] = useState(false);
+  const [goalPdfPreviewUrl, setGoalPdfPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (goalPdfPreviewUrl) {
+        URL.revokeObjectURL(goalPdfPreviewUrl);
+      }
+    };
+  }, [goalPdfPreviewUrl]);
 
   if (loading) {
     return (
@@ -171,27 +187,29 @@ export default function CourseDetailPage() {
               <div className="w-full">
                 <div className="mb-1.5 flex justify-between items-center text-xs text-muted-foreground">
                   <span>Progress</span>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("flex items-center gap-1", getResourcesColorClass())}>
-                      {stats.completedResources}/{stats.totalResources} resources
-                    </span>
-                    <span className="font-medium">{stats.progressPercent}%</span>
-                  </div>
+                  <span className="font-medium">{stats.progressPercent}%</span>
                 </div>
                 <ProgressBar value={stats.progressPercent} showLabel={false} size="md" />
               </div>
-              <div className="flex items-center gap-2 sm:gap-x-3 text-xs flex-wrap">
-                <span className={cn("flex items-center gap-1 shrink-0", getLessonsColorClass())}>
-                  {stats.completedLessons}/{stats.totalLessons} lessons
-                </span>
-                <span className={cn("flex items-center gap-1 shrink-0", getGoalsColorClass())}>
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {stats.completedGoals}/{stats.totalGoals} goals
-                </span>
-                <span className={cn("flex items-center gap-1 shrink-0", getObjectivesColorClass())}>
-                  <Target className="h-3.5 w-3.5" />
-                  {stats.completedObjectives}/{stats.totalObjectives} objectives
-                </span>
+              <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex items-center gap-2 sm:gap-x-3 flex-wrap">
+                  <span className={cn("flex items-center gap-1 shrink-0", getLessonsColorClass())}>
+                    {stats.completedLessons}/{stats.totalLessons} lessons
+                  </span>
+                  <span className={cn("flex items-center gap-1 shrink-0", getObjectivesColorClass())}>
+                    <Target className="h-3.5 w-3.5" />
+                    {stats.completedObjectives}/{stats.totalObjectives} objectives
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-x-3 flex-wrap">
+                  <span className={cn("flex items-center gap-1 shrink-0", getGoalsColorClass())}>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {stats.completedGoals}/{stats.totalGoals} goals
+                  </span>
+                  <span className={cn("flex items-center gap-1 shrink-0", getResourcesColorClass())}>
+                    {stats.completedResources}/{stats.totalResources} resources
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -230,6 +248,14 @@ export default function CourseDetailPage() {
                         answer={course.goalAnswers?.[index] || ''}
                         index={index}
                         onAnswerChange={handleGoalAnswerChange}
+                        onPreviewPDF={(content) => {
+                          if (goalPdfPreviewUrl) {
+                            URL.revokeObjectURL(goalPdfPreviewUrl);
+                          }
+                          const url = generatePDFPreview(content);
+                          setGoalPdfPreviewUrl(url);
+                          setShowGoalPDFPreview(true);
+                        }}
                       />
                     ))}
                   </ul>
@@ -329,6 +355,55 @@ export default function CourseDetailPage() {
             goalAnswers: course.goalAnswers || [],
           }}
         />
+
+        <Dialog open={showGoalPDFPreview} onOpenChange={(open) => {
+          if (!open) {
+            setShowGoalPDFPreview(false);
+            if (goalPdfPreviewUrl) {
+              setTimeout(() => {
+                URL.revokeObjectURL(goalPdfPreviewUrl);
+                setGoalPdfPreviewUrl(null);
+              }, 100);
+            }
+          }
+        }}>
+          <DialogContent
+            className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none"
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+          >
+            <DialogTitle className="sr-only">Goal PDF Preview</DialogTitle>
+            <DialogDescription className="sr-only">Preview of individual goal answer as PDF</DialogDescription>
+            <div className="relative w-full h-full flex flex-col">
+              <div className="absolute top-4 right-4 z-50">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowGoalPDFPreview(false);
+                    if (goalPdfPreviewUrl) {
+                      setTimeout(() => {
+                        URL.revokeObjectURL(goalPdfPreviewUrl);
+                        setGoalPdfPreviewUrl(null);
+                      }, 100);
+                    }
+                  }}
+                  className="bg-background/90 backdrop-blur-sm"
+                >
+                  Close
+                </Button>
+              </div>
+              {goalPdfPreviewUrl && (
+                <iframe
+                  src={goalPdfPreviewUrl}
+                  className="w-full h-full border-0"
+                  title="Goal PDF Preview"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

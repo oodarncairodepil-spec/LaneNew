@@ -211,6 +211,10 @@ export function useStudyStore() {
     const totalGoals = courseGoalsTotal + lessonGoalsTotal;
     const completedGoals = courseGoalsCompleted + lessonGoalsCompleted;
 
+    const totalUnits = totalLessons + totalObjectives + totalResources + totalGoals;
+    const completedUnits = completedLessons + completedObjectives + completedResources + completedGoals;
+    const progressPercent = totalUnits > 0 ? Math.round((completedUnits / totalUnits) * 100) : 0;
+
     return {
       totalLessons,
       completedLessons,
@@ -220,7 +224,7 @@ export function useStudyStore() {
       completedResources,
       totalGoals,
       completedGoals,
-      progressPercent: totalResources > 0 ? Math.round((completedResources / totalResources) * 100) : 0,
+      progressPercent,
     };
   }, []);
 

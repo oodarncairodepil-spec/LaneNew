@@ -1,9 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Download, CheckCircle2, Eye, FileText } from 'lucide-react';
+import { Play, Pause, Download, CheckCircle2, Eye, FileText, ScrollText } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { downloadSummary, generatePDFPreview } from '@/lib/download';
+import { speakText, pauseSpeech, resumeSpeech, getEnglishVoices } from '@/lib/speech';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface GoalItemProps {
   goal: string;
@@ -14,9 +28,19 @@ interface GoalItemProps {
   onPreviewPDF?: (content: string) => void;
 }
 
+const MOBILE_BREAKPOINT = 768;
+
 export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPreviewPDF }: GoalItemProps) {
   const [localAnswer, setLocalAnswer] = useState(answer);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showTextPreview, setShowTextPreview] = useState(false);
+  const [ttsSpeaking, setTtsSpeaking] = useState(false);
+  const [ttsPaused, setTtsPaused] = useState(false);
+  const [englishVoices, setEnglishVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches
+  );
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -25,6 +49,39 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
   useEffect(() => {
     setLocalAnswer(answer);
   }, [answer]);
+
+  // Detect mobile viewport so we show Preview text on mobile, Preview PDF on desktop
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (!showTextPreview && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setTtsSpeaking(false);
+      setTtsPaused(false);
+    }
+  }, [showTextPreview]);
+
+  // Warm up voices when text preview opens (helps mobile load voices after user gesture)
+  useEffect(() => {
+    if (showTextPreview && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+    }
+  }, [showTextPreview]);
+
+  // Load English (US/UK) voices when text preview is open; refresh when voices load (e.g. on mobile)
+  useEffect(() => {
+    if (!showTextPreview || typeof window === 'undefined' || !window.speechSynthesis) return;
+    const update = () => setEnglishVoices(getEnglishVoices());
+    update();
+    window.speechSynthesis.addEventListener('voiceschanged', update);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', update);
+  }, [showTextPreview]);
 
   useEffect(() => {
     const loadVoices = () => {
@@ -282,15 +339,27 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
                   </>
                 )}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePreviewPDF}
-                className="h-10 sm:h-8"
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                Preview PDF
-              </Button>
+              {isMobile ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => localAnswer?.trim() && setShowTextPreview(true)}
+                  className="h-10 sm:h-8"
+                >
+                  <ScrollText className="mr-2 h-4 w-4" />
+                  Preview text
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handlePreviewPDF}
+                  className="h-10 sm:h-8"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview PDF
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -326,6 +395,126 @@ export function GoalItem({ goal, answer, index, onAnswerChange, onDownload, onPr
           )}
         </div>
       </div>
+
+      {/* Full-screen text/content preview for mobile and desktop */}
+      <Dialog open={showTextPreview} onOpenChange={setShowTextPreview}>
+        <DialogContent
+          className="max-w-none w-[100vw] w-screen h-[100dvh] h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none flex flex-col [&>button]:hidden"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogTitle className="sr-only">Preview content</DialogTitle>
+          <DialogDescription className="sr-only">Full-screen preview of your answer text</DialogDescription>
+          <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex-none flex items-center justify-between h-14 shrink-0 px-4 border-b gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const text = localAnswer?.trim() ?? '';
+                    if (ttsSpeaking && ttsPaused) {
+                      // Re-speak from start with current selected voice (resume keeps old voice)
+                      if (text) {
+                        speakText(text, {
+                          voice: selectedVoice,
+                          onEnd: () => {
+                            setTtsSpeaking(false);
+                            setTtsPaused(false);
+                          },
+                        });
+                        setTtsPaused(false);
+                      }
+                    } else if (ttsSpeaking && !ttsPaused) {
+                      pauseSpeech();
+                      setTtsPaused(true);
+                    } else if (text) {
+                      speakText(text, {
+                        voice: selectedVoice,
+                        onEnd: () => {
+                          setTtsSpeaking(false);
+                          setTtsPaused(false);
+                        },
+                      });
+                      setTtsSpeaking(true);
+                      setTtsPaused(false);
+                    }
+                  }}
+                  className="bg-background/90 backdrop-blur-sm shrink-0"
+                  aria-label={
+                    ttsSpeaking ? (ttsPaused ? 'Resume' : 'Pause') : 'Play text to speech'
+                  }
+                  disabled={!localAnswer?.trim()}
+                >
+                  {ttsSpeaking ? (
+                    ttsPaused ? (
+                      <>
+                        <Play className="h-4 w-4 mr-1.5" />
+                        Resume
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="h-4 w-4 mr-1.5" />
+                        Pause
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-1.5" />
+                      Play
+                    </>
+                  )}
+                </Button>
+                <Select
+                  value={selectedVoice ? `${selectedVoice.name}|${selectedVoice.lang}` : 'default'}
+                  onOpenChange={(open) => open && setEnglishVoices(getEnglishVoices())}
+                  onValueChange={(val) => {
+                    if (val === 'default') {
+                      setSelectedVoice(null);
+                      return;
+                    }
+                    const v = englishVoices.find((v) => `${v.name}|${v.lang}` === val);
+                    if (v) setSelectedVoice(v);
+                  }}
+                  disabled={ttsSpeaking && !ttsPaused}
+                >
+                  <SelectTrigger className="w-[180px] h-9 text-xs bg-background/90 backdrop-blur-sm">
+                    <SelectValue placeholder="Voice (en-US / en-GB)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default (UK preferred)</SelectItem>
+                    {englishVoices.map((v) => (
+                      <SelectItem key={`${v.name}|${v.lang}`} value={`${v.name}|${v.lang}`}>
+                        {v.name} ({v.lang})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {ttsSpeaking && !ttsPaused && (
+                  <span className="text-xs text-muted-foreground shrink-0">Pause to change voice</span>
+                )}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowTextPreview(false)}
+                className="bg-background/90 backdrop-blur-sm shrink-0"
+              >
+                Close
+              </Button>
+            </div>
+            <div
+              className="flex-1 min-h-0 overflow-auto p-4 text-foreground bg-background"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed max-w-prose">
+                {localAnswer?.trim() || ''}
+              </pre>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }

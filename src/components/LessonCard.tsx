@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lesson } from '@/types/study';
 import { Card, CardContent } from '@/components/ui/card';
-import { MoreVertical, Trash2, Target, CheckCircle2, Eye } from 'lucide-react';
+import { MoreVertical, Trash2, Target, CheckCircle2, Eye, ScrollText, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { generatePDFPreview } from '@/lib/download';
-import { PdfPreviewViewer } from '@/components/PdfPreviewViewer';
+import { speakText, pauseSpeech, resumeSpeech, getEnglishVoices } from '@/lib/speech';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
   DialogDescription,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -19,6 +26,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -32,10 +45,65 @@ const statusBorderClass: Record<Lesson['status'], string> = {
   completed: 'border-success/60',
 };
 
+const MOBILE_BREAKPOINT = 768;
+
 export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
   const navigate = useNavigate();
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [showTextPreview, setShowTextPreview] = useState(false);
+  const [ttsSpeaking, setTtsSpeaking] = useState(false);
+  const [ttsPaused, setTtsPaused] = useState(false);
+  const [englishVoices, setEnglishVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches
+  );
+  const [previewGoalIndex, setPreviewGoalIndex] = useState<number | 'all'>('all');
+  const [showGoalPickerSheet, setShowGoalPickerSheet] = useState(false);
+  const [goalPickerMode, setGoalPickerMode] = useState<'text' | 'pdf'>('text');
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (!showTextPreview && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setTtsSpeaking(false);
+      setTtsPaused(false);
+    }
+  }, [showTextPreview]);
+
+  // Warm up voices when text preview opens (helps mobile load voices after user gesture)
+  useEffect(() => {
+    if (showTextPreview && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+    }
+  }, [showTextPreview]);
+
+  // Load English (US/UK) voices when text preview is open; refresh when voices load (e.g. on mobile)
+  useEffect(() => {
+    if (!showTextPreview || typeof window === 'undefined' || !window.speechSynthesis) return;
+    const update = () => setEnglishVoices(getEnglishVoices());
+    update();
+    window.speechSynthesis.addEventListener('voiceschanged', update);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', update);
+  }, [showTextPreview]);
+
+  const textPreviewContent = (lesson.goals || [])
+    .map((_, i) => ((lesson.goalAnswers || [])[i] || '').trim())
+    .filter(Boolean)
+    .join('\n\n');
+
+  const getPreviewContent = (goalIndex: number | 'all'): string => {
+    if (goalIndex === 'all') return textPreviewContent;
+    return (lesson.goalAnswers || [])[goalIndex]?.trim() ?? '';
+  };
 
   const totalObjectives = lesson.objectives?.length || 0;
   const completedObjectives = lesson.objectives?.filter(o => o?.status === 'completed').length || 0;
@@ -69,27 +137,23 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
     return 'text-warning';
   };
 
-  const handlePreviewPDF = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!lesson.goals || lesson.goals.length === 0) return;
-
-    const answers = lesson.goalAnswers || [];
-    // Only include the markdown text from the answers, nothing else
-    const content = lesson.goals.map((goal, index) => {
-      const answer = answers[index] || '';
-      return answer.trim();
-    }).filter(answer => answer.length > 0).join('\n\n');
-
+  const openPDFWithContent = (content: string) => {
     if (!content.trim()) return;
-
-    // Clean up previous URL if exists
-    if (pdfPreviewUrl) {
-      URL.revokeObjectURL(pdfPreviewUrl);
-    }
-
+    if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
     const url = generatePDFPreview(content);
     setPdfPreviewUrl(url);
     setShowPDFPreview(true);
+  };
+
+  const handlePreviewPDF = (e: React.MouseEvent, content?: string) => {
+    e.stopPropagation();
+    if (!lesson.goals || lesson.goals.length === 0) return;
+    const toUse = content ?? (lesson.goalAnswers || [])
+      .map((a, i) => (i < (lesson.goals?.length ?? 0) ? (a || '').trim() : ''))
+      .filter(Boolean)
+      .join('\n\n');
+    if (!toUse.trim()) return;
+    openPDFWithContent(toUse);
   };
 
   const handleClosePDFPreview = (open: boolean) => {
@@ -156,15 +220,45 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
                   {completedGoals}/{totalGoals} goals
                 </span>
                 {allGoalsFilled && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 sm:h-6 px-2 text-xs"
-                    onClick={handlePreviewPDF}
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    Preview PDF
-                  </Button>
+                  isMobile ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 sm:h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (totalGoals > 1) {
+                          setGoalPickerMode('text');
+                          setShowGoalPickerSheet(true);
+                        } else {
+                          setPreviewGoalIndex(0);
+                          setShowTextPreview(true);
+                        }
+                      }}
+                    >
+                      <ScrollText className="h-3 w-3 mr-1" />
+                      Preview text
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 sm:h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (totalGoals > 1) {
+                          setGoalPickerMode('pdf');
+                          setShowGoalPickerSheet(true);
+                        } else {
+                          setPreviewGoalIndex(0);
+                          handlePreviewPDF(e, getPreviewContent(0));
+                        }
+                      }}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Preview PDF
+                    </Button>
+                  )
                 )}
               </div>
             )}
@@ -176,9 +270,42 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
         </div>
       </CardContent>
 
-      {/* PDF Preview Dialog - Fullscreen */}
+      {/* Goal picker Sheet (multiple goals): choose which goal to preview */}
+      <Sheet open={showGoalPickerSheet} onOpenChange={setShowGoalPickerSheet}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Preview which goal?</SheetTitle>
+          </SheetHeader>
+          <div className="grid gap-2 py-4">
+            {(lesson.goals || []).map((_, i) => {
+              const answer = (lesson.goalAnswers || [])[i] || '';
+              const firstLine = answer.trim().split(/\n/)[0] || '';
+              const snippet = firstLine.length > 56 ? firstLine.slice(0, 56) + '…' : firstLine;
+              return (
+                <Button
+                  key={i}
+                  variant="outline"
+                  className="w-full justify-start h-12 min-h-[44px] text-left normal-case font-normal"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const idx = i;
+                    setPreviewGoalIndex(idx);
+                    setShowGoalPickerSheet(false);
+                    if (goalPickerMode === 'text') setShowTextPreview(true);
+                    else openPDFWithContent(getPreviewContent(idx));
+                  }}
+                >
+                  <span className="truncate block w-full text-left">{snippet || `Goal ${i + 1}`}</span>
+                </Button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* PDF Preview Dialog - Fullscreen (desktop) */}
       <Dialog open={showPDFPreview} onOpenChange={handleClosePDFPreview}>
-        <DialogContent 
+        <DialogContent
           className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none"
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
@@ -186,7 +313,6 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
           <DialogTitle className="sr-only">Lesson Goals PDF Preview</DialogTitle>
           <DialogDescription className="sr-only">Preview of lesson goals and answers as PDF</DialogDescription>
           <div className="relative w-full h-full flex flex-col">
-            {/* Minimal header with close button */}
             <div className="absolute top-4 right-4 z-50">
               <Button
                 variant="secondary"
@@ -200,14 +326,138 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
                 Close
               </Button>
             </div>
-            {/* PDF preview rendered in-page for mobile compatibility */}
             {pdfPreviewUrl && (
-              <PdfPreviewViewer
-                pdfUrl={pdfPreviewUrl}
-                className="flex-1 min-h-0"
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full border-0"
                 title="Lesson Goals PDF Preview"
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Full-screen text preview (mobile) */}
+      <Dialog open={showTextPreview} onOpenChange={setShowTextPreview}>
+        <DialogContent
+          className="max-w-none w-screen h-[100dvh] h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none flex flex-col [&>button]:hidden"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogTitle className="sr-only">Lesson goals content</DialogTitle>
+          <DialogDescription className="sr-only">Full-screen preview of lesson goal answers</DialogDescription>
+          <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex-none flex items-center justify-between h-14 shrink-0 px-4 border-b gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                {totalGoals > 1 && (
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {previewGoalIndex === 'all' ? 'All goals' : `Goal ${(previewGoalIndex as number) + 1}`}
+                  </span>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const text = getPreviewContent(previewGoalIndex) || '';
+                    if (ttsSpeaking && ttsPaused) {
+                      // Re-speak from start with current selected voice (resume keeps old voice)
+                      if (text) {
+                        speakText(text, {
+                          voice: selectedVoice,
+                          onEnd: () => {
+                            setTtsSpeaking(false);
+                            setTtsPaused(false);
+                          },
+                        });
+                        setTtsPaused(false);
+                      }
+                    } else if (ttsSpeaking && !ttsPaused) {
+                      pauseSpeech();
+                      setTtsPaused(true);
+                    } else if (text) {
+                      speakText(text, {
+                        voice: selectedVoice,
+                        onEnd: () => {
+                          setTtsSpeaking(false);
+                          setTtsPaused(false);
+                        },
+                      });
+                      setTtsSpeaking(true);
+                      setTtsPaused(false);
+                    }
+                  }}
+                  className="bg-background/90 backdrop-blur-sm shrink-0"
+                  aria-label={
+                    ttsSpeaking ? (ttsPaused ? 'Resume' : 'Pause') : 'Play text to speech'
+                  }
+                  disabled={!getPreviewContent(previewGoalIndex)?.trim()}
+                >
+                  {ttsSpeaking ? (
+                    ttsPaused ? (
+                      <>
+                        <Play className="h-4 w-4 mr-1.5" />
+                        Resume
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="h-4 w-4 mr-1.5" />
+                        Pause
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-1.5" />
+                      Play
+                    </>
+                  )}
+                </Button>
+                <Select
+                  value={selectedVoice ? `${selectedVoice.name}|${selectedVoice.lang}` : 'default'}
+                  onOpenChange={(open) => open && setEnglishVoices(getEnglishVoices())}
+                  onValueChange={(val) => {
+                    if (val === 'default') {
+                      setSelectedVoice(null);
+                      return;
+                    }
+                    const v = englishVoices.find((v) => `${v.name}|${v.lang}` === val);
+                    if (v) setSelectedVoice(v);
+                  }}
+                  disabled={ttsSpeaking && !ttsPaused}
+                >
+                  <SelectTrigger className="w-[180px] h-9 text-xs bg-background/90 backdrop-blur-sm">
+                    <SelectValue placeholder="Voice (en-US / en-GB)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default (UK preferred)</SelectItem>
+                    {englishVoices.map((v) => (
+                      <SelectItem key={`${v.name}|${v.lang}`} value={`${v.name}|${v.lang}`}>
+                        {v.name} ({v.lang})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {ttsSpeaking && !ttsPaused && (
+                  <span className="text-xs text-muted-foreground shrink-0">Pause to change voice</span>
+                )}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); setShowTextPreview(false); }}
+                className="bg-background/90 backdrop-blur-sm shrink-0"
+              >
+                Close
+              </Button>
+            </div>
+            <div
+              className="flex-1 min-h-0 overflow-auto p-4 text-foreground bg-background"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed max-w-prose">
+                {getPreviewContent(previewGoalIndex) || 'No content'}
+              </pre>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -32,7 +32,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { downloadSummary, formatResourceSummary, generatePDFPreview } from '@/lib/download';
-import { PdfPreviewViewer } from '@/components/PdfPreviewViewer';
 import { useToast } from '@/hooks/use-toast';
 import type { ProgressStatus } from '@/types/study';
 
@@ -524,7 +523,7 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
 
       {/* PDF Preview Dialog - Fullscreen */}
       <Dialog open={showPDFPreview} onOpenChange={handleClosePDFPreview}>
-        <DialogContent 
+        <DialogContent
           className="max-w-none w-screen h-screen max-h-screen p-0 m-0 translate-x-0 translate-y-0 left-0 top-0 rounded-none"
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
@@ -532,7 +531,6 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
           <DialogTitle className="sr-only">Resource PDF Preview</DialogTitle>
           <DialogDescription className="sr-only">Preview of resource summary as PDF</DialogDescription>
           <div className="relative w-full h-full flex flex-col">
-            {/* Minimal header with close button */}
             <div className="absolute top-4 right-4 z-50">
               <Button
                 variant="secondary"
@@ -546,12 +544,10 @@ export function ResourceCard({ resource, courseId, lessonId, objectiveId, onDele
                 Close
               </Button>
             </div>
-            {/* Fullscreen PDF iframe */}
-            {/* PDF preview rendered in-page for mobile compatibility */}
             {pdfPreviewUrl && (
-              <PdfPreviewViewer
-                pdfUrl={pdfPreviewUrl}
-                className="flex-1 min-h-0"
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full border-0"
                 title="Resource PDF Preview"
               />
             )}

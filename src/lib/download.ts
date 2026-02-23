@@ -43,7 +43,7 @@ function generatePDFBlob(content: string): Blob {
 
   // Split content into lines and process
   const lines = content.split('\n');
-  
+
   lines.forEach((line) => {
     // Check if we need a new page
     if (yPosition > pageHeight - margin - lineHeight) {
@@ -95,9 +95,6 @@ function generatePDFBlob(content: string): Blob {
       // Regular text - handle inline bold
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(fontSize);
-      
-      // Simple approach: remove markdown formatting for now
-      // (jsPDF doesn't support inline formatting easily without additional libraries)
       const text = line.replace(/\*\*/g, '').trim();
       if (text) {
         const splitText = doc.splitTextToSize(text, maxWidth);
