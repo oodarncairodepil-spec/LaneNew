@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,31 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { ProgressStatus, Resource } from '@/types/study';
+
+/** Try to get page title from URL; returns null on CORS/network error or no title. */
+async function fetchTitleFromUrl(urlString: string): Promise<string | null> {
+  try {
+    const url = new URL(urlString);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    const res = await fetch(urlString, { method: 'GET', mode: 'cors', signal: AbortSignal.timeout(8000) });
+    const html = await res.text();
+    const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const raw = match?.[1] ?? null;
+    if (!raw) return null;
+    return raw.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 300) || null;
+  } catch {
+    return null;
+  }
+}
+
+function descriptionFromHostname(urlString: string): string {
+  try {
+    const hostname = new URL(urlString).hostname.replace(/^www\./, '');
+    return `Resource from ${hostname}`;
+  } catch {
+    return 'Resource';
+  }
+}
 
 interface ResourceFormDialogProps {
   open: boolean;
@@ -45,6 +70,33 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
       }
     }
   }, [open, initialData, isEditing]);
+
+  const fillDescriptionFromLink = useCallback(async () => {
+    const trimmed = link.trim();
+    if (!trimmed || isEditing) return;
+    try {
+      const u = new URL(trimmed);
+      if (!['http:', 'https:'].includes(u.protocol)) return;
+    } catch {
+      return;
+    }
+    const title = await fetchTitleFromUrl(trimmed);
+    setDescription((prev) => (prev.trim() ? prev : title || descriptionFromHostname(trimmed)));
+  }, [link, isEditing]);
+
+  useEffect(() => {
+    if (isEditing || !link.trim()) return;
+    try {
+      new URL(link.trim());
+    } catch {
+      return;
+    }
+    const t = setTimeout(async () => {
+      const title = await fetchTitleFromUrl(link.trim());
+      setDescription((prev) => (prev.trim() ? prev : title || descriptionFromHostname(link.trim())));
+    }, 700);
+    return () => clearTimeout(t);
+  }, [link, isEditing]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,9 +136,13 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
                 type="url"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
+                onBlur={() => fillDescriptionFromLink()}
                 placeholder="https://..."
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Description will be filled automatically from the page title when possible.
+              </p>
             </div>
 
             <div className="space-y-2">
