@@ -48,7 +48,7 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim()) return;
+    if (!link.trim()) return;
 
     onSubmit({
       description: description.trim(),
@@ -78,28 +78,28 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
 
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="resource-description">Description *</Label>
-              <Input
-                id="resource-description"
-                value={description || ''}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of the resource (e.g., 'Introduction to React')"
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                A short description to identify this resource.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="resource-link">Resource Link</Label>
+              <Label htmlFor="resource-link">Resource Link *</Label>
               <Input
                 id="resource-link"
                 type="url"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="https://..."
+                required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="resource-description">Description</Label>
+              <Input
+                id="resource-description"
+                value={description || ''}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief description of the resource (e.g., 'Introduction to React')"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional. A short description to identify this resource.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -122,7 +122,7 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!description?.trim()}>
+            <Button type="submit" disabled={!link?.trim()}>
               {isEditing ? 'Save Changes' : 'Add Resource'}
             </Button>
           </DialogFooter>
