@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lesson } from '@/types/study';
 import { Card, CardContent } from '@/components/ui/card';
-import { MoreVertical, Trash2, Target, CheckCircle2, Eye, ScrollText, Play, Pause } from 'lucide-react';
+import { MoreVertical, Trash2, Target, CheckCircle2, Eye, ScrollText, Play, Pause, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { generatePDFPreview } from '@/lib/download';
@@ -108,6 +108,12 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
   const totalObjectives = lesson.objectives?.length || 0;
   const completedObjectives = lesson.objectives?.filter(o => o?.status === 'completed').length || 0;
 
+  const totalResources = (lesson.objectives || []).reduce((sum, o) => sum + (o.resources?.length || 0), 0);
+  const completedResources = (lesson.objectives || []).reduce(
+    (sum, o) => sum + (o.resources?.filter(r => r?.status === 'completed').length || 0),
+    0
+  );
+
   // Calculate goals completion
   const totalGoals = lesson.goals?.length || 0;
   const completedGoals = lesson.goalAnswers?.filter((answer, index) => {
@@ -134,6 +140,13 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
     if (totalObjectives === 0) return 'text-muted-foreground';
     if (completedObjectives === 0) return 'text-muted-foreground';
     if (completedObjectives === totalObjectives) return 'text-success';
+    return 'text-warning';
+  };
+
+  const getResourcesColorClass = () => {
+    if (totalResources === 0) return 'text-muted-foreground';
+    if (completedResources === 0) return 'text-muted-foreground';
+    if (completedResources === totalResources) return 'text-success';
     return 'text-warning';
   };
 
@@ -266,6 +279,12 @@ export function LessonCard({ lesson, courseId, onDelete }: LessonCardProps) {
               <Target className="h-3.5 w-3.5" />
               {completedObjectives}/{totalObjectives} objectives
             </span>
+            {totalResources > 0 && (
+              <span className={cn("flex items-center gap-1", getResourcesColorClass())}>
+                <FileText className="h-3.5 w-3.5" />
+                {completedResources}/{totalResources} resources
+              </span>
+            )}
           </div>
         </div>
       </CardContent>
