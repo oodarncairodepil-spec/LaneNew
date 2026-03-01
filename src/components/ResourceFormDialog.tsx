@@ -102,8 +102,13 @@ export function ResourceFormDialog({ open, onOpenChange, onSubmit, initialData, 
     e.preventDefault();
     if (!link.trim()) return;
 
+    const finalDescription =
+      !isEditing && !description.trim() && link.trim()
+        ? descriptionFromHostname(link.trim())
+        : description.trim();
+
     onSubmit({
-      description: description.trim(),
+      description: finalDescription,
       link: link.trim(),
       summary: summary.trim(),
       status: initialData?.status || 'not_started',
